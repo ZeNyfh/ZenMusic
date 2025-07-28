@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'services/audioservice.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -11,56 +9,66 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ZenMusic',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const HelloWorldScreen(),
+      home: Scaffold(
+        appBar: AppBar(title: const Text('YouTube Player')),
+        body: const Center(child: YouTubePlayer()),
+      ),
     );
   }
 }
 
-class HelloWorldScreen extends StatefulWidget {
-  const HelloWorldScreen({super.key});
+class YouTubePlayer extends StatefulWidget {
+  const YouTubePlayer({super.key});
 
   @override
-  State<HelloWorldScreen> createState() => _HelloWorldScreenState();
+  State<YouTubePlayer> createState() => _YouTubePlayerState();
 }
 
-class _HelloWorldScreenState extends State<HelloWorldScreen> {
-  static const platform = MethodChannel('com.zenyfh.zenmusic/hello');
-  String _message = 'Waiting for message...';
+class _YouTubePlayerState extends State<YouTubePlayer> {
+  final _controller = TextEditingController();
+  String _status = "Enter a song name";
 
-  Future<void> _getJavaMessage() async {
-    try {
-      final String result = await platform.invokeMethod('getMessage');
-      setState(() => _message = result);
-    } on PlatformException catch (e) {
-      setState(() => _message = "Failed: '${e.message}'");
-    }
-  }
+  Future<void> _play() async {
+    if (_controller.text.isEmpty) return;
 
-  @override
-  void initState() {
-    super.initState();
-    _getJavaMessage();
+    setState(() => _status = "Loading...");
+    final title = await AudioPlayerService.play(_controller.text);
+    setState(() => _status = title ?? "Playback failed");
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('ZenMusic')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(_message, style: const TextStyle(fontSize: 24)),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _getJavaMessage,
-              child: const Text('Call Java Again'),
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          TextField(
+            controller: _controller,
+            decoration: InputDecoration(
+              labelText: 'Search YouTube',
+              border: OutlineInputBorder(),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: _play,
+              ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _play,
+            child: const Text('Play'),
+          ),
+          const SizedBox(height: 20),
+          Text(_status, style: const TextStyle(fontSize: 18)),
+        ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 }

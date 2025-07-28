@@ -1,16 +1,7 @@
-# zenmusic
+# ZenMusic
 
-An android music app bsaed on zenvibe, with inspiration from ViMusic/RiMusic/ViTune.
+A Flutter yt-dlp music app based on my other project **[Zenvibe](https://github.com/ZeNyfh/Zenvibe)**, with inspiration from **[ViMusic](https://github.com/vfsfitvnm/ViMusic/)/[RiMusic](https://github.com/fast4x/RiMusic)/[ViTune](https://github.com/25huizengek1/ViTune/)**.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+There is no starting yet.

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'services/audioservice.dart';
+import 'Pages/YTPlayer.dart';
+import 'Pages/Queue.dart';
+
 
 void main() => runApp(const MyApp());
 
@@ -9,66 +11,55 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(title: const Text('YouTube Player')),
-        body: const Center(child: YouTubePlayer()),
-      ),
+      home: const HomeScreen(),
     );
   }
 }
 
-class YouTubePlayer extends StatefulWidget {
-  const YouTubePlayer({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<YouTubePlayer> createState() => _YouTubePlayerState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _YouTubePlayerState extends State<YouTubePlayer> {
-  final _controller = TextEditingController();
-  String _status = "Enter a song name";
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0;
 
-  Future<void> _play() async {
-    if (_controller.text.isEmpty) return;
+  final List<Widget> _pages = [
+    YouTubePlayer(),
+    Center(child: Text('Current track', style: TextStyle(fontSize: 18))),
+    QueuePage(),
+  ];
 
-    setState(() => _status = "Loading...");
-    final title = await AudioPlayerService.play(_controller.text);
-    setState(() => _status = title ?? "Playback failed");
+
+  void _onItemTapped(int index) {
+    setState(() => _selectedIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          TextField(
-            controller: _controller,
-            decoration: InputDecoration(
-              labelText: 'Search YouTube',
-              border: OutlineInputBorder(),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: _play,
-              ),
-            ),
+    return Scaffold(
+      appBar: AppBar(title: const Text('YouTube Player')),
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: 'Search',
           ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _play,
-            child: const Text('Play'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.play_arrow),
+            label: 'Current Track',
           ),
-          const SizedBox(height: 20),
-          Text(_status, style: const TextStyle(fontSize: 18)),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.queue_music),
+            label: 'Queue',
+          ),
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 }

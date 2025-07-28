@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/audioservice.dart';
+
+import '../services/AudioPlayerManager.dart';
 
 class YouTubePlayer extends StatefulWidget {
   const YouTubePlayer({super.key});
@@ -11,13 +12,24 @@ class YouTubePlayer extends StatefulWidget {
 class _YouTubePlayerState extends State<YouTubePlayer> {
   final _controller = TextEditingController();
   String _status = "Enter a song name";
+  bool _isLoading = false;
 
   Future<void> _play() async {
     if (_controller.text.isEmpty) return;
 
-    setState(() => _status = "Loading...");
-    final title = await AudioPlayerService.play(_controller.text);
-    setState(() => _status = title ?? "Playback failed");
+    setState(() {
+      _isLoading = true;
+      _status = "Loading...";
+    });
+
+    try {
+      final title = await AudioPlayerManager.play(_controller.text);
+      setState(() => _status = title ?? "Added to queue");
+    } catch (e) {
+      setState(() => _status = "Error: $e");
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -34,17 +46,28 @@ class _YouTubePlayerState extends State<YouTubePlayer> {
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.search),
-                onPressed: _play,
+                onPressed: _isLoading ? null : _play,
               ),
             ),
+            onSubmitted: (_) => _play(),
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: _play,
+            onPressed: _isLoading ? null : _play,
             child: const Text('Play'),
           ),
           const SizedBox(height: 20),
-          Text(_status, style: const TextStyle(fontSize: 18)),
+          Text(
+            _status,
+            style: TextStyle(
+              fontSize: 18,
+              color: _status.startsWith("Error") ? Colors.red : Colors.black,
+            ),
+          ),
+          if (_isLoading) ...[
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(),
+          ],
         ],
       ),
     );

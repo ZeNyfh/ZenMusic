@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'Pages/YTPlayer.dart';
-import 'Pages/Queue.dart';
 
+import 'Pages/PlayerPage.dart';
+import 'Pages/QueuePage.dart';
 
 void main() => runApp(const MyApp());
 
@@ -10,9 +10,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: const HomeScreen(),
-    );
+    return MaterialApp(home: const HomeScreen());
   }
 }
 
@@ -32,7 +30,6 @@ class _HomeScreenState extends State<HomeScreen> {
     QueuePage(),
   ];
 
-
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
   }
@@ -46,10 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
           BottomNavigationBarItem(
             icon: Icon(Icons.play_arrow),
             label: 'Current Track',

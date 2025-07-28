@@ -53,7 +53,10 @@ class _YouTubePlayerState extends State<YouTubePlayer> {
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: _isLoading ? null : _play,
+            onPressed: _isLoading ? null : () {
+              FocusManager.instance.primaryFocus?.unfocus(); // hide keyboard when play is clicked.
+              _play();
+            },
             child: const Text('Play'),
           ),
           const SizedBox(height: 20),

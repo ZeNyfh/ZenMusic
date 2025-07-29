@@ -248,14 +248,15 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                 // slider
                 Expanded(
                   child: Slider(
-                    value: _currentPosition.toDouble().clamp(0, _currentTrack?.length?.toDouble() ?? 1),
+                    value: _currentPosition.toDouble().clamp(0, _currentTrack?.length.toDouble() ?? 1),
                     min: 0,
-                    max: _currentTrack?.length?.toDouble() ?? 1,
+                    max: _currentTrack?.length.toDouble() ?? 1,
                     onChanged: (value) {
                       setState(() {
                         _currentPosition = value.toInt();
                       });
                     },
+                    // after user moved the position slider.
                     onChangeEnd: (value) async {
                       try {
                         await AudioPlayerManager.seek(value.toInt());

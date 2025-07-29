@@ -37,27 +37,40 @@ class _YouTubePlayerState extends State<YouTubePlayer> {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          TextField(
-            controller: _controller,
-            decoration: InputDecoration(
-              labelText: 'Search YouTube',
-              border: const OutlineInputBorder(),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: _isLoading ? null : _play,
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller, // Added controller from working version
+                  decoration: InputDecoration(
+                    labelText: 'Search YouTube',
+                    border: const OutlineInputBorder(),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 16,
+                    ),
+                  ),
+                  onSubmitted: (_) => _play(), // Added from working version
+                ),
               ),
-            ),
-            onSubmitted: (_) => _play(),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _isLoading ? null : () {
-              FocusManager.instance.primaryFocus?.unfocus(); // hide keyboard when play is clicked.
-              _play();
-            },
-            child: const Text('Play'),
+              const SizedBox(width: 2),
+              // Search Button
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: _isLoading ? null : () {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  _play();
+                },
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.grey.shade300,
+                  shape: const CircleBorder(),
+                  side: BorderSide.none,
+                ),
+                padding: const EdgeInsets.all(12),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           Text(

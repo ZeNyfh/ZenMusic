@@ -6,9 +6,70 @@ import com.yausername.youtubedl_android.YoutubeDLRequest;
 import com.yausername.youtubedl_android.YoutubeDLResponse;
 import com.zenyfh.zenmusic.audio.AudioTrack;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class YouTubeExtractor {
+    public List<AudioTrack> searchAudioTracks(String query) throws Exception {
+        final int SEARCHLIMIT = 50;
+        if (!query.startsWith("http")) {
+            query = String.format("ytsearch%s:%s", SEARCHLIMIT, query);
+        }
+
+        YoutubeDLRequest request = new YoutubeDLRequest(query);
+        request.addOption("-q");
+        request.addOption("--no-warnings");
+        request.addOption("--flat-playlist");
+        request.addOption("--skip-download");
+        request.addOption("-J");
+
+        YoutubeDLResponse response = YoutubeDL.getInstance().execute(request);
+        JSONObject jsonObject = new JSONObject(response.getOut());
+        return parseJsonToAudioTracks(jsonObject);
+    }
+    private List<AudioTrack> parseJsonToAudioTracks(JSONObject jsonObject) throws JSONException {
+        List<AudioTrack> tracks = new ArrayList<>();
+        JSONArray entries = jsonObject.getJSONArray("entries");
+
+        for (int i = 0; i < entries.length(); i++) {
+            try {
+                JSONObject entry = entries.getJSONObject(i);
+                String artist = entry.getString("uploader");
+                String title = entry.getString("title");
+                int length = (int) Math.round(entry.getDouble("duration"));
+                String streamUrl = entry.getString("url");
+
+                // Get first thumbnail URL or use a fallback
+                Uri thumbnail = Uri.parse(getFirstThumbnailUrl(entry));
+
+                tracks.add(new AudioTrack(
+                        artist,
+                        title,
+                        thumbnail,
+                        length,
+                        0, // Initial position
+                        streamUrl
+                ));
+            } catch (Exception e) {
+                // Log error and skip invalid entries
+                e.printStackTrace();
+            }
+        }
+        return tracks;
+    }
+
+    private String getFirstThumbnailUrl(JSONObject entry) {
+        try {
+            JSONArray thumbnails = entry.getJSONArray("thumbnails");
+            if (thumbnails.length() > 0) {
+                return thumbnails.getJSONObject(0).getString("url");
+            }
+        } catch (JSONException ignored) {}
+        return ""; // Fallback empty URL
+    }
     public AudioTrack extractAudioTrack(String url) throws Exception {
         if (!url.startsWith("http")) {
             url = "ytsearch:" + url;

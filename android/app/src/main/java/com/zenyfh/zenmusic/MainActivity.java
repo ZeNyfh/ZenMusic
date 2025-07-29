@@ -25,19 +25,14 @@ public class MainActivity extends FlutterActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        initializeDependencies();
+        init();
     }
 
-    private void initializeDependencies() {
+    private void init() {
         try {
-            // Initialize YouTubeDL
             YoutubeDL.getInstance().init(getApplication());
-
-            // Initialize services
             playerManager = new PlayerManager(this);
             youTubeExtractor = new YouTubeExtractor();
-
-            // Set up event listeners
             playerManager.setTrackEventListener(new PlayerManager.TrackEventListener() {
                 @Override
                 public void onTrackStart(AudioTrack track) {
@@ -64,6 +59,9 @@ public class MainActivity extends FlutterActivity {
 
     private void handleMethodCall(MethodCall call, MethodChannel.Result result) {
         switch (call.method) {
+            case "search":
+                handleSearchRequest(call.argument("query"), result);
+                break;
             case "play":
                 handlePlayRequest(call.argument("query"), result);
                 break;
@@ -74,6 +72,18 @@ public class MainActivity extends FlutterActivity {
                 result.notImplemented();
                 break;
         }
+    }
+
+    private void handleSearchRequest(String query, MethodChannel.Result result) {
+        new Thread(() -> {
+            try {
+                List<AudioTrack> searchResults = youTubeExtractor.searchAudioTracks(query);
+                runOnUiThread(() -> result.success(convertAudioTrackListToMap(searchResults)));
+            } catch (Exception e) {
+                runOnUiThread(() ->
+                        result.error("SEARCH_ERROR", e.getMessage(), null));
+            }
+        }).start();
     }
 
     private void handlePlayRequest(String query, MethodChannel.Result result) {
@@ -98,15 +108,15 @@ public class MainActivity extends FlutterActivity {
     private void handleGetQueueRequest(MethodChannel.Result result) {
         try {
             List<AudioTrack> queue = playerManager.getQueue();
-            result.success(convertQueueToMap(queue));
+            result.success(convertAudioTrackListToMap(queue));
         } catch (Exception e) {
             result.error("QUEUE_ERROR", e.getMessage(), null);
         }
     }
 
-    private List<Map<String, Object>> convertQueueToMap(List<AudioTrack> queue) {
+    private List<Map<String, Object>> convertAudioTrackListToMap(List<AudioTrack> tracks) {
         List<Map<String, Object>> result = new ArrayList<>();
-        for (AudioTrack track : queue) {
+        for (AudioTrack track : tracks) {
             Map<String, Object> map = new HashMap<>();
             map.put("artist", track.getArtist());
             map.put("title", track.getTitle());

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/AudioTrack.dart';
 import '../services/AudioPlayerManager.dart';
 
 class YouTubePlayer extends StatefulWidget {
@@ -11,24 +12,54 @@ class YouTubePlayer extends StatefulWidget {
 
 class _YouTubePlayerState extends State<YouTubePlayer> {
   final _controller = TextEditingController();
-  String _status = "Enter a song name";
   bool _isLoading = false;
+  bool _isAddingToQueue = false;
+  List<AudioTrack> _searchResults = [];
+  String? _error;
 
-  Future<void> _play() async {
-    if (_controller.text.isEmpty) return;
+  Future<void> _handleSubmit() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
 
-    setState(() {
-      _isLoading = true;
-      _status = "Loading...";
-    });
+    // Clear previous errors
+    setState(() => _error = null);
 
+    if (_isUrl(text)) {
+      // Direct URL play
+      setState(() => _isAddingToQueue = true);
+      try {
+        await AudioPlayerManager.play(text);
+      } catch (e) {
+        setState(() => _error = 'Playback error: $e');
+      } finally {
+        setState(() => _isAddingToQueue = false);
+      }
+    } else {
+      // Perform search
+      setState(() => _isLoading = true);
+      try {
+        final results = await AudioPlayerManager.search(text);
+        setState(() => _searchResults = results);
+      } catch (e) {
+        setState(() => _error = 'Search error: $e');
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  bool _isUrl(String text) {
+    return text.startsWith('http://') || text.startsWith('https://');
+  }
+
+  Future<void> _playTrack(AudioTrack track) async {
+    setState(() => _isAddingToQueue = true);
     try {
-      final title = await AudioPlayerManager.play(_controller.text);
-      setState(() => _status = title ?? "Added to queue");
+      await AudioPlayerManager.play(track.streamUrl);
     } catch (e) {
-      setState(() => _status = "Error: $e");
+      setState(() => _error = 'Playback error: $e');
     } finally {
-      setState(() => _isLoading = false);
+      setState(() => _isAddingToQueue = false);
     }
   }
 
@@ -37,13 +68,13 @@ class _YouTubePlayerState extends State<YouTubePlayer> {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
         children: [
+          // Search bar
           Row(
             children: [
               Expanded(
                 child: TextField(
-                  controller: _controller, // Added controller from working version
+                  controller: _controller,
                   decoration: InputDecoration(
                     labelText: 'Search YouTube',
                     border: const OutlineInputBorder(),
@@ -52,38 +83,54 @@ class _YouTubePlayerState extends State<YouTubePlayer> {
                       horizontal: 16,
                     ),
                   ),
-                  onSubmitted: (_) => _play(), // Added from working version
+                  onSubmitted: (_) => _handleSubmit(),
                 ),
               ),
               const SizedBox(width: 2),
-              // Search Button
               IconButton(
                 icon: const Icon(Icons.search),
-                onPressed: _isLoading ? null : () {
-                  FocusManager.instance.primaryFocus?.unfocus();
-                  _play();
-                },
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.grey.shade300,
-                  shape: const CircleBorder(),
-                  side: BorderSide.none,
-                ),
-                padding: const EdgeInsets.all(12),
+                onPressed:
+                (_isLoading || _isAddingToQueue) ? null : _handleSubmit,
+                // ... button styling ...
               ),
             ],
           ),
+
           const SizedBox(height: 20),
-          Text(
-            _status,
-            style: TextStyle(
-              fontSize: 18,
-              color: _status.startsWith("Error") ? Colors.red : Colors.black,
+
+          // status indicators
+          if (_isLoading) const CircularProgressIndicator(),
+          if (_error != null)
+            Text(
+              _error!,
+              style: const TextStyle(color: Colors.red, fontSize: 16),
+            ),
+
+          // search results
+          Expanded(
+            child: _searchResults.isEmpty
+                ? Center(
+              child: Text(
+                _controller.text.isEmpty
+                    ? 'Enter a search term'
+                    : 'No results found',
+              ),
+            )
+                : ListView.builder(
+              itemCount: _searchResults.length,
+              itemBuilder: (context, index) {
+                final track = _searchResults[index];
+                return ListTile(
+                  leading: track.thumbnail != null
+                      ? Image.network(track.thumbnail!)
+                      : null,
+                  title: Text(track.title),
+                  subtitle: Text(track.artist ?? 'Unknown artist'),
+                  onTap: _isAddingToQueue ? null : () => _playTrack(track),
+                );
+              },
             ),
           ),
-          if (_isLoading) ...[
-            const SizedBox(height: 20),
-            const CircularProgressIndicator(),
-          ],
         ],
       ),
     );

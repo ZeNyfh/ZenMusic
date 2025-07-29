@@ -12,7 +12,6 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class YouTubeExtractor {
     public List<AudioTrack> searchAudioTracks(String query) throws Exception {
@@ -35,18 +34,18 @@ public class YouTubeExtractor {
     private List<AudioTrack> parseJsonToAudioTracks(JSONObject jsonObject) throws JSONException {
         List<AudioTrack> tracks = new ArrayList<>();
         JSONArray entries = jsonObject.getJSONArray("entries");
-        Log.i("THESE ARE THE ENTRIES: ", entries.toString());
 
         for (int i = 0; i < entries.length(); i++) {
             try {
                 JSONObject entry = entries.getJSONObject(i);
+                Log.i("Entry:", entry.toString());
                 String artist = entry.getString("uploader");
                 String title = entry.getString("title");
-                int length = (int) Math.round(entry.getDouble("duration"));
+                int length = (int) Math.floor(entry.getDouble("duration"));
                 String streamUrl = entry.getString("url").split(" ")[0];
 
                 // get first thumbnail URL or use fallback
-                Uri thumbnail = Uri.parse(getFirstThumbnailUrl(entry));
+                Uri thumbnail = Uri.parse(getMostSquareThumbnailUrl(entry));
 
                 tracks.add(new AudioTrack(
                         artist,
@@ -54,7 +53,8 @@ public class YouTubeExtractor {
                         thumbnail,
                         length,
                         0, // initial pos
-                        streamUrl
+                        streamUrl,
+                        (length > 0 && length < 172800) // if you're playing a song that is 2 days long, what are you doing.
                 ));
             } catch (Exception e) {
                 // skip invalid
@@ -64,15 +64,31 @@ public class YouTubeExtractor {
         return tracks;
     }
 
-    private String getFirstThumbnailUrl(JSONObject entry) {
+    private String getMostSquareThumbnailUrl(JSONObject entry) {
         try {
             JSONArray thumbnails = entry.getJSONArray("thumbnails");
             if (thumbnails.length() > 0) {
-                return thumbnails.getJSONObject(0).getString("url");
+                JSONObject best = null;
+                double bestRatioDiff = Double.MAX_VALUE;
+                for (int i = 0; i < thumbnails.length(); i++) {
+                    JSONObject thumb = thumbnails.getJSONObject(i);
+                    if (!thumb.has("width") || !thumb.has("height")) continue;
+                    int width = thumb.getInt("width");
+                    int height = thumb.getInt("height");
+                    double ratioDiff = Math.abs((double) width / height - 1);
+                    if (ratioDiff < bestRatioDiff) {
+                        best = thumb;
+                        bestRatioDiff = ratioDiff;
+                    }
+                }
+                if (best != null && best.has("url")) {
+                    return best.getString("url");
+                }
             }
         } catch (JSONException ignored) {}
-        return ""; // empty url fallbacj
+        return ""; // fallback
     }
+
     public AudioTrack extractAudioTrack(String url) throws Exception {
         if (!url.startsWith("http")) {
             url = "ytsearch:" + url;
@@ -95,7 +111,8 @@ public class YouTubeExtractor {
                 Uri.parse(json.optString("thumbnail", "")),
                 json.optInt("duration", 0),
                 0,
-                audioUrl
+                audioUrl,
+                false
         );
     }
 

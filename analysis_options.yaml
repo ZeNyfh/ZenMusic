@@ -3,10 +3,6 @@ include: package:flutter_lints/flutter.yaml
 linter:
     rules:
 
-analyzer:
-    enable-experiment:
-        - trailing-comma-removal
-
 dartfmt:
     indent: 4
     trailing-commas: false

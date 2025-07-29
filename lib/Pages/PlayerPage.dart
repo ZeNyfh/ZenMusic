@@ -21,11 +21,11 @@ class _YouTubePlayerState extends State<YouTubePlayer> {
         final text = _controller.text.trim();
         if (text.isEmpty) return;
 
-        // Clear previous errors
+        // clear previous errors
         setState(() => _error = null);
 
         if (_isUrl(text)) {
-            // Direct URL play
+            // direct URL play
             setState(() => _isAddingToQueue = true);
             try {
                 await AudioPlayerManager.play(text);
@@ -35,7 +35,7 @@ class _YouTubePlayerState extends State<YouTubePlayer> {
                 setState(() => _isAddingToQueue = false);
             }
         } else {
-            // Perform search
+            // search
             setState(() => _isLoading = true);
             try {
                 final results = await AudioPlayerManager.search(text);
@@ -69,7 +69,7 @@ class _YouTubePlayerState extends State<YouTubePlayer> {
             padding: const EdgeInsets.all(20.0),
             child: Column(
                 children: [
-                    // Search bar
+                    // search bar
                     Row(
                         children: [
                             Expanded(
@@ -91,7 +91,6 @@ class _YouTubePlayerState extends State<YouTubePlayer> {
                                 icon: const Icon(Icons.search),
                                 onPressed:
                                 (_isLoading || _isAddingToQueue) ? null : _handleSubmit,
-                                // ... button styling ...
                             ),
                         ],
                     ),

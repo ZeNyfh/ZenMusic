@@ -9,6 +9,7 @@ import com.zenyfh.zenmusic.extractor.YouTubeExtractor;
 import com.zenyfh.zenmusic.player.PlayerManager;
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
+import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 
@@ -19,8 +20,10 @@ import java.util.Map;
 
 public class MainActivity extends FlutterActivity {
     private static final String CHANNEL = "com.zenyfh.zenmusic/audio";
+    private static final String EVENT_CHANNEL = "com.zenyfh.zenmusic/audio_events";
     private PlayerManager playerManager;
     private YouTubeExtractor youTubeExtractor;
+    private EventChannel.EventSink eventSink;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +40,9 @@ public class MainActivity extends FlutterActivity {
                 @Override
                 public void onTrackStart(AudioTrack track) {
                     System.out.println("Track started: " + track.getTitle());
+                    if (eventSink != null) {
+                        eventSink.success("track_changed");
+                    }
                 }
 
                 @Override
@@ -53,8 +59,24 @@ public class MainActivity extends FlutterActivity {
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
         super.configureFlutterEngine(flutterEngine);
+
+        // command channel
         new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), CHANNEL)
                 .setMethodCallHandler(this::handleMethodCall);
+
+        // event channel
+        new EventChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), EVENT_CHANNEL)
+                .setStreamHandler(new EventChannel.StreamHandler() {
+                    @Override
+                    public void onListen(Object arguments, EventChannel.EventSink events) {
+                        eventSink = events;
+                    }
+
+                    @Override
+                    public void onCancel(Object arguments) {
+                        eventSink = null;
+                    }
+                });
     }
 
     private void handleMethodCall(MethodCall call, MethodChannel.Result result) {
@@ -68,12 +90,53 @@ public class MainActivity extends FlutterActivity {
             case "getQueue":
                 handleGetQueueRequest(result);
                 break;
+            case "getCurrentTrack":
+                result.success(convertAudioTrackToMap(playerManager.getCurrentTrack()));
+                break;
+            case "pause":
+                playerManager.pause();
+                result.success(true);
+                break;
+            case "resume":
+                playerManager.resume();
+                result.success(true);
+                break;
+            case "seek":
+                handleSeek(call.arguments, result);
+                break;
+            case "getPosition":
+                result.success(playerManager.getPosition());
+                break;
             default:
                 result.notImplemented();
                 break;
         }
     }
 
+
+    private void handleSeek(Object position, MethodChannel.Result result) {
+        try {
+            if (position == null) {
+                result.error("INVALID_SEEK", "Position cannot be null", null);
+                return;
+            }
+
+            int seekPosition;
+            if (position instanceof Double) {
+                seekPosition = ((Double) position).intValue();
+            } else if (position instanceof Integer) {
+                seekPosition = (Integer) position;
+            } else {
+                result.error("INVALID_SEEK", "Position must be a number", null);
+                return;
+            }
+
+            playerManager.seek(seekPosition);
+            result.success(true);
+        } catch (Exception e) {
+            result.error("SEEK_ERROR", e.getMessage(), null);
+        }
+    }
     private void handleSearchRequest(String query, MethodChannel.Result result) {
         new Thread(() -> {
             try {
@@ -117,16 +180,20 @@ public class MainActivity extends FlutterActivity {
     private List<Map<String, Object>> convertAudioTrackListToMap(List<AudioTrack> tracks) {
         List<Map<String, Object>> result = new ArrayList<>();
         for (AudioTrack track : tracks) {
-            Map<String, Object> map = new HashMap<>();
-            map.put("artist", track.getArtist());
-            map.put("title", track.getTitle());
-            map.put("thumbnail", track.getThumbnail().toString());
-            map.put("length", track.getLength());
-            map.put("position", track.getPosition());
-            map.put("streamUrl", track.getStreamUrl());
-            result.add(map);
+            result.add(convertAudioTrackToMap(track));
         }
         return result;
+    }
+
+    private Map<String, Object> convertAudioTrackToMap(AudioTrack track) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("artist", track.getArtist());
+        map.put("title", track.getTitle());
+        map.put("thumbnail", track.getThumbnail().toString());
+        map.put("length", track.getLength());
+        map.put("position", track.getPosition());
+        map.put("streamUrl", track.getStreamUrl());
+        return map;
     }
 
     @Override

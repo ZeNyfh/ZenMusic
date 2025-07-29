@@ -1,19 +1,41 @@
+import 'dart:ffi';
+
+import 'package:zenmusic/services/AudioPlayerManager.dart';
+
 class AudioTrack {
-  final String artist;
-  final String title;
-  final String thumbnail;
-  final int length;
-  final int position;
-  final String streamUrl;
+  final String _artist;
+  final String _title;
+  final String _thumbnail;
+  final int _length;
+  late int _position;
+  final String _streamUrl;
 
   AudioTrack({
-    required this.artist,
-    required this.title,
-    required this.thumbnail,
-    required this.length,
-    required this.position,
-    required this.streamUrl,
-  });
+    required String artist,
+    required String title,
+    required String thumbnail,
+    required int length,
+    required int position,
+    required String streamUrl,
+  })  : _artist = artist,
+        _title = title,
+        _thumbnail = thumbnail,
+        _length = length,
+        _position = position,
+        _streamUrl = streamUrl;
+
+  String get artist => _artist;
+  String get title => _title;
+  String get thumbnail => _thumbnail;
+  int get length => _length;
+  String get streamUrl => _streamUrl;
+
+  Future<int> get position async {
+    var pos = AudioPlayerManager.getPosition();
+    _position = await pos;
+    return pos;
+  }
+
 
   factory AudioTrack.fromMap(Map<dynamic, dynamic> map) {
     return AudioTrack(

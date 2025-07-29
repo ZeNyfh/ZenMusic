@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'Pages/NowPlayingPage.dart';
 import 'Pages/PlayerPage.dart';
 import 'Pages/QueuePage.dart';
 
@@ -26,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final List<Widget> _pages = [
         YouTubePlayer(),
-        Center(child: Text('Current track', style: TextStyle(fontSize: 18))),
+        NowPlayingPage(),
         QueuePage(),
     ];
 
@@ -37,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
     @override
     Widget build(BuildContext context) {
         return Scaffold(
-            appBar: AppBar(title: const Text('YouTube Player')),
+            appBar: AppBar(title: const Text('ZenMusic')),
             body: _pages[_selectedIndex],
             bottomNavigationBar: BottomNavigationBar(
                 currentIndex: _selectedIndex,
@@ -46,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
                     BottomNavigationBarItem(
                         icon: Icon(Icons.play_arrow),
-                        label: 'Current Track',
+                        label: 'Now Playing',
                     ),
                     BottomNavigationBarItem(
                         icon: Icon(Icons.queue_music),

@@ -42,7 +42,7 @@ public class YouTubeExtractor {
                 int length = (int) Math.round(entry.getDouble("duration"));
                 String streamUrl = entry.getString("url");
 
-                // Get first thumbnail URL or use a fallback
+                // get first thumbnail URL or use fallback
                 Uri thumbnail = Uri.parse(getFirstThumbnailUrl(entry));
 
                 tracks.add(new AudioTrack(
@@ -50,11 +50,11 @@ public class YouTubeExtractor {
                         title,
                         thumbnail,
                         length,
-                        0, // Initial position
+                        0, // initial pos
                         streamUrl
                 ));
             } catch (Exception e) {
-                // Log error and skip invalid entries
+                // skip invalid
                 e.printStackTrace();
             }
         }
@@ -68,7 +68,7 @@ public class YouTubeExtractor {
                 return thumbnails.getJSONObject(0).getString("url");
             }
         } catch (JSONException ignored) {}
-        return ""; // Fallback empty URL
+        return ""; // empty url fallback
     }
     public AudioTrack extractAudioTrack(String url) throws Exception {
         if (!url.startsWith("http")) {

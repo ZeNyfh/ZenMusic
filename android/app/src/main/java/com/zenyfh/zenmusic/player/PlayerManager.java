@@ -15,7 +15,8 @@ public class PlayerManager {
     private final BlockingQueue<AudioTrack> queue = new LinkedBlockingQueue<>();
     private ExoPlayer player;
     private TrackEventListener eventListener;
-
+    private AudioTrack currentTrack;
+    private long startTime;
     public PlayerManager(Context context) {
         initializePlayer(context);
     }
@@ -60,6 +61,24 @@ public class PlayerManager {
 
         AudioTrack next = queue.poll();
         if (next != null) {
+            currentTrack = next;
+            playTrack(next);
+        }
+    }
+
+    public void playNextTrackForcefully() {
+        AudioTrack next = queue.poll();
+        if (next != null) {
+            currentTrack = next;
+            playTrack(next);
+        }
+    }
+
+    public void playPreviousTrackForcefully() {
+        // TODO: see issues #1 and #2, for now duplicate playnextforce functionality.
+        AudioTrack next = queue.poll();
+        if (next != null) {
+            currentTrack = next;
             playTrack(next);
         }
     }
@@ -74,6 +93,26 @@ public class PlayerManager {
         return new ArrayList<>(queue);
     }
 
+    public AudioTrack getCurrentTrack() {
+        return currentTrack;
+    }
+
+    public void pause() {
+        player.pause();
+    }
+
+    public void resume() {
+        player.play();
+    }
+
+    public void seek(int time) {
+        player.seekTo(time*1000);
+    }
+
+    public int getPosition() {
+        return (int) (player.getContentPosition()/1000);
+    }
+
     public void setTrackEventListener(TrackEventListener listener) {
         this.eventListener = listener;
     }
@@ -84,6 +123,8 @@ public class PlayerManager {
             player = null;
         }
     }
+
+
 
     public interface TrackEventListener {
         void onTrackStart(AudioTrack track);

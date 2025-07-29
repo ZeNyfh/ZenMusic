@@ -4,6 +4,7 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import com.yausername.youtubedl_android.YoutubeDL;
 import com.yausername.youtubedl_android.YoutubeDLException;
+import com.zenyfh.zenmusic.audio.AudioEventHandler;
 import com.zenyfh.zenmusic.audio.AudioTrack;
 import com.zenyfh.zenmusic.extractor.YouTubeExtractor;
 import com.zenyfh.zenmusic.player.PlayerManager;
@@ -17,6 +18,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.zenyfh.zenmusic.audio.AudioEventHandler.setTrackEventListener;
 
 public class MainActivity extends FlutterActivity {
     private static final String CHANNEL = "com.zenyfh.zenmusic/audio";
@@ -36,7 +39,7 @@ public class MainActivity extends FlutterActivity {
             YoutubeDL.getInstance().init(getApplication());
             playerManager = new PlayerManager(this);
             youTubeExtractor = new YouTubeExtractor();
-            playerManager.setTrackEventListener(new PlayerManager.TrackEventListener() {
+            setTrackEventListener(new AudioEventHandler.TrackEventListener() {
                 @Override
                 public void onTrackStart(AudioTrack track) {
                     System.out.println("Track started: " + track.getTitle());
@@ -48,7 +51,7 @@ public class MainActivity extends FlutterActivity {
                 @Override
                 public void onTrackEnd(AudioTrack track) {
                     System.out.println("Track ended: " + track.getTitle());
-                    playerManager.playNextTrack();
+                    playerManager.player().nextTrack();
                 }
             });
         } catch (YoutubeDLException e) {
@@ -91,21 +94,21 @@ public class MainActivity extends FlutterActivity {
                 handleGetQueueRequest(result);
                 break;
             case "getCurrentTrack":
-                result.success(convertAudioTrackToMap(playerManager.getCurrentTrack()));
+                result.success(convertAudioTrackToMap(playerManager.player().nowPlaying()));
                 break;
             case "pause":
-                playerManager.pause();
+                playerManager.player().pause();
                 result.success(true);
                 break;
             case "resume":
-                playerManager.resume();
+                playerManager.player().resume();
                 result.success(true);
                 break;
             case "seek":
                 handleSeek(call.arguments, result);
                 break;
             case "getPosition":
-                result.success(playerManager.getPosition());
+                result.success(playerManager.player().getPosition());
                 break;
             default:
                 result.notImplemented();
@@ -131,7 +134,7 @@ public class MainActivity extends FlutterActivity {
                 return;
             }
 
-            playerManager.seek(seekPosition);
+            playerManager.player().seek(seekPosition);
             result.success(true);
         } catch (Exception e) {
             result.error("SEEK_ERROR", e.getMessage(), null);
@@ -155,7 +158,7 @@ public class MainActivity extends FlutterActivity {
                 AudioTrack track = youTubeExtractor.extractAudioTrack(query);
                 runOnUiThread(() -> {
                     if (track != null) {
-                        playerManager.queueTrack(track);
+                        playerManager.player().queue(track);
                         result.success(track.getTitle());
                     } else {
                         result.error("NO_AUDIO", "No audio stream found", null);
@@ -170,7 +173,7 @@ public class MainActivity extends FlutterActivity {
 
     private void handleGetQueueRequest(MethodChannel.Result result) {
         try {
-            List<AudioTrack> queue = playerManager.getQueue();
+            List<AudioTrack> queue = playerManager.player().getQueue();
             result.success(convertAudioTrackListToMap(queue));
         } catch (Exception e) {
             result.error("QUEUE_ERROR", e.getMessage(), null);

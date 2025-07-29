@@ -40,10 +40,6 @@ public class AudioTrack {
         return position;
     }
 
-    public void setPosition(int position) {
-        this.position = position;
-    }
-
     public String getStreamUrl() {
         return streamUrl;
     }

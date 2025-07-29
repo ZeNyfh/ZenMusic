@@ -51,6 +51,7 @@ val youtubedlAndroid = "0.17.4"
 
 dependencies {
     implementation("androidx.media3:media3-exoplayer:1.8.0-rc02")
+    implementation("androidx.media3:media3-exoplayer-hls:1.7.1")
     implementation("io.github.junkfood02.youtubedl-android:library:${youtubedlAndroid}")
     implementation("io.github.junkfood02.youtubedl-android:ffmpeg:${youtubedlAndroid}")
 }

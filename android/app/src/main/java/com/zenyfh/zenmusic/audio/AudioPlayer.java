@@ -30,17 +30,14 @@ public class AudioPlayer {
     }
 
     public int getPosition() {
-        return (int) (exoPlayer.getContentPosition());
+        return (int) (exoPlayer.getContentPosition() / 1000); // ms → seconds
     }
-
-    public void seek(long positionMs) {
-        exoPlayer.seekTo(positionMs);
+    public void seek(long positionSeconds) {
+        exoPlayer.seekTo(positionSeconds * 1000); // seconds → ms
     }
-
     public long getDuration() {
-        return exoPlayer.getDuration();
+        return exoPlayer.getDuration() / 1000; // ms → seconds
     }
-
 
     public void resume() {
         exoPlayer.play();
@@ -91,7 +88,14 @@ public class AudioPlayer {
 
     public void queue(AudioTrack track) {
         if (track == null) throw new NullPointerException("track is null");
+        boolean wasEmpty = queue.isEmpty();
         this.queue.add(track);
+
+        if (wasEmpty) {
+            this.queuePosition = 0;
+            setNowPlaying(track);
+            changeTrack(); // Start playing immediately
+        }
     }
 
     public LinkedList<AudioTrack> getQueue() {

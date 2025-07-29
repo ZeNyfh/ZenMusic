@@ -2,7 +2,6 @@ package com.zenyfh.zenmusic.player;
 
 import android.content.Context;
 import androidx.media3.common.Player;
-import androidx.media3.exoplayer.ExoPlayer;
 import com.zenyfh.zenmusic.audio.AudioPlayer;
 
 
@@ -27,7 +26,6 @@ public class PlayerManager {
             }
         });
     }
-
 
     public void release() {
         if (audioPlayer != null) {

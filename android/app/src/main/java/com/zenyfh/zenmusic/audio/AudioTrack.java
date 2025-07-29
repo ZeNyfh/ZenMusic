@@ -10,14 +10,20 @@ public class AudioTrack {
     private final int length;   // seconds
     private final String streamUrl;
     private final int position;       // seconds
+    private final boolean isStream;
 
-    public AudioTrack(String artist, String title, Uri thumbnail, int length, int position, String streamUrl) {
+    public AudioTrack(String artist, String title, Uri thumbnail, int length, int position, String streamUrl, boolean isStream) {
         this.artist = artist;
         this.title = title;
         this.thumbnail = thumbnail;
         this.length = length;
         this.position = position;
         this.streamUrl = streamUrl;
+        this.isStream = isStream;
+    }
+
+    public boolean isStream() {
+        return isStream;
     }
 
     public String getArtist() {

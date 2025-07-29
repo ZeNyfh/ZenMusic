@@ -5,6 +5,14 @@ import '../models/AudioTrack.dart';
 class AudioPlayerManager {
     static const _channel = MethodChannel('com.zenyfh.zenmusic/audio');
 
+    static Future<String> getLyrics() async {
+      try {
+        return await _channel.invokeMethod("getLyrics");
+      } on Exception {
+        throw Exception("could Not get lyrics");
+      }
+    }
+
     static Future<List<AudioTrack>> search(String query) async {
         try {
             final List<dynamic> result =
@@ -32,13 +40,14 @@ class AudioPlayerManager {
         }
     }
 
-  static Future<AudioTrack?> getCurrentTrack() async {
+    static Future<AudioTrack?> getCurrentTrack() async {
       try {
-        return AudioTrack.fromMap(await _channel.invokeMethod('getCurrentTrack'));
-      } on Exception {
+        final result = await _channel.invokeMethod('getCurrentTrack');
+        return result != null ? AudioTrack.fromMap(result) : null;
+      } on PlatformException {
         return null;
       }
-  }
+    }
 
   static Future<void> pause() async {
         try {
@@ -67,7 +76,7 @@ class AudioPlayerManager {
 
   static Future<void> next() async {
       try {
-        await _channel.invokeMethod("playNextTrackForcefully");
+        await _channel.invokeMethod("npNext");
       } on Exception {
         throw Exception("No track found.");
       }
@@ -75,9 +84,9 @@ class AudioPlayerManager {
 
   static Future<void> previous() async {
       try {
-        await _channel.invokeMethod("previous");
+        await _channel.invokeMethod("npPrevious");
       } on Exception {
-        throw Exception("No track found or something crazy happened with the track position.");
+        throw Exception("No track found or something crazy happened with the queue position.");
       }
   }
 

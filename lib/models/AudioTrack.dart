@@ -9,6 +9,7 @@ class AudioTrack {
   final int _length;
   late int _position;
   final String _streamUrl;
+  final bool _isStream;
 
   AudioTrack({
     required String artist,
@@ -17,18 +18,21 @@ class AudioTrack {
     required int length,
     required int position,
     required String streamUrl,
+    required bool isStream,
   })  : _artist = artist,
         _title = title,
         _thumbnail = thumbnail,
         _length = length,
         _position = position,
-        _streamUrl = streamUrl;
+        _streamUrl = streamUrl,
+        _isStream = isStream;
 
   String get artist => _artist;
   String get title => _title;
   String get thumbnail => _thumbnail;
   int get length => _length;
   String get streamUrl => _streamUrl;
+  bool get isStream => _isStream;
 
   Future<int> get position async {
     var pos = AudioPlayerManager.getPosition();
@@ -45,6 +49,7 @@ class AudioTrack {
       length: map['length'] ?? 0,
       position: map['position'] ?? 0,
       streamUrl: map['streamUrl'] ?? '',
+      isStream: map['isStream'] ?? false,
     );
   }
 

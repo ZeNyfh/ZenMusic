@@ -1,13 +1,17 @@
 package com.zenyfh.zenmusic;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import androidx.annotation.NonNull;
 import com.yausername.youtubedl_android.YoutubeDL;
 import com.yausername.youtubedl_android.YoutubeDLException;
 import com.zenyfh.zenmusic.audio.AudioEventHandler;
 import com.zenyfh.zenmusic.audio.AudioTrack;
+import com.zenyfh.zenmusic.extractor.LRCLIBManager;
 import com.zenyfh.zenmusic.extractor.YouTubeExtractor;
 import com.zenyfh.zenmusic.player.PlayerManager;
+import io.flutter.Log;
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.EventChannel;
@@ -18,8 +22,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.zenyfh.zenmusic.audio.AudioEventHandler.setTrackEventListener;
+import static com.zenyfh.zenmusic.extractor.LRCLIBManager.getLyrics;
 
 public class MainActivity extends FlutterActivity {
     private static final String CHANNEL = "com.zenyfh.zenmusic/audio";
@@ -27,6 +34,8 @@ public class MainActivity extends FlutterActivity {
     private PlayerManager playerManager;
     private YouTubeExtractor youTubeExtractor;
     private EventChannel.EventSink eventSink;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,6 +105,12 @@ public class MainActivity extends FlutterActivity {
             case "getCurrentTrack":
                 result.success(convertAudioTrackToMap(playerManager.player().nowPlaying()));
                 break;
+            case "npNext":
+                playerManager.player().nextTrack();
+                break;
+            case "npPrevious":
+                playerManager.player().previousTrack();
+                break;
             case "pause":
                 playerManager.player().pause();
                 result.success(true);
@@ -103,6 +118,14 @@ public class MainActivity extends FlutterActivity {
             case "resume":
                 playerManager.player().resume();
                 result.success(true);
+                break;
+            case "getLyrics":
+                executor.execute(() -> {
+                    String lyrics = LRCLIBManager.getLyrics(playerManager.player().nowPlaying());
+                    mainHandler.post(() -> {
+                        result.success(lyrics);
+                    });
+                });
                 break;
             case "seek":
                 handleSeek(call.arguments, result);
@@ -159,15 +182,13 @@ public class MainActivity extends FlutterActivity {
                 runOnUiThread(() -> {
                     if (track != null) {
                         playerManager.player().queue(track);
+                        playerManager.player().setNowPlaying(track); // Explicitly set
                         result.success(track.getTitle());
                     } else {
                         result.error("NO_AUDIO", "No audio stream found", null);
                     }
                 });
-            } catch (Exception e) {
-                runOnUiThread(() ->
-                        result.error("EXTRACTION_ERROR", e.getMessage(), null));
-            }
+            } catch (Exception ignored) {}
         }).start();
     }
 
@@ -189,6 +210,8 @@ public class MainActivity extends FlutterActivity {
     }
 
     private Map<String, Object> convertAudioTrackToMap(AudioTrack track) {
+        if (track == null) return null;
+
         Map<String, Object> map = new HashMap<>();
         map.put("artist", track.getArtist());
         map.put("title", track.getTitle());

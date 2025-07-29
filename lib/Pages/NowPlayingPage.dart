@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Add this import
+import 'package:flutter/services.dart';
 import '../models/AudioTrack.dart';
 import '../services/AudioPlayerManager.dart';
 import 'QueuePage.dart';
@@ -100,7 +100,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 
   void _skipToPrevious() async {
     try {
-      // await AudioPlayerManager.previous();
+      await AudioPlayerManager.previous();
       await _loadCurrentTrack();
     } catch (e) {
       print('Previous track error: $e');
@@ -151,7 +151,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     if (_currentTrack == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Now Playing')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: Text('No track playing')),
       );
     }
 
@@ -161,7 +161,6 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // TODO: add lyrics to clickable thumbnail
             GestureDetector(
               onTap: _toggleOverlay,
               child: Stack(
@@ -173,40 +172,57 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                     fit: BoxFit.cover,
                   ),
                   if (_isOverlayVisible)
-                    Container(
-                      color: Colors.black54,
-                      height: MediaQuery.of(context).size.height * 0.35,
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            Text(
-                              _currentTrack!.title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineMedium
-                                  ?.copyWith(color: Colors.white),
-                              textAlign: TextAlign.center,
+                    FutureBuilder<String>(
+                      future: AudioPlayerManager.getLyrics(),
+                      builder: (context, snapshot) {
+                        final lyrics = snapshot.data ?? 'Loading lyrics...';
+
+                        return Container(
+                          color: Colors.black54,
+                          height: MediaQuery.of(context).size.height * 0.35,
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(20.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Center(
+                                  child: Text(
+                                    _currentTrack!.title,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(color: Colors.white),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Center(
+                                  child: Text(
+                                    _currentTrack!.artist,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(color: Colors.white70),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  lyrics,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                      ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _currentTrack!.artist,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(color: Colors.white70),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Album/Channel Info',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge
-                                  ?.copyWith(color: Colors.white70),
-                            ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
                     ),
                 ],
               ),

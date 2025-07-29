@@ -9,7 +9,7 @@ class AudioPlayerManager {
       try {
         return await _channel.invokeMethod("getLyrics");
       } on Exception {
-        throw Exception("could Not get lyrics");
+        return "could Not get lyrics";
       }
     }
 

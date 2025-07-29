@@ -1,9 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../models/AudioTrack.dart';
 import '../services/AudioPlayerManager.dart';
-import 'QueuePage.dart';
-import 'dart:async';
 
 class NowPlayingPage extends StatefulWidget {
   const NowPlayingPage({super.key});
@@ -19,7 +20,9 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   Timer? _progressTimer;
   int _currentPosition = 0;
   StreamSubscription? _trackChangeSubscription;
-  final EventChannel _eventChannel = const EventChannel('com.zenyfh.zenmusic/audio_events');
+  final EventChannel _eventChannel = const EventChannel(
+    'com.zenyfh.zenmusic/audio_events',
+  );
 
   @override
   void initState() {
@@ -37,16 +40,19 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   }
 
   void _setupTrackChangeListener() {
-    _trackChangeSubscription = _eventChannel.receiveBroadcastStream().listen((dynamic event) {
-      if (event == 'track_changed') {
-        _loadCurrentTrack();
-        setState(() {
-          _currentPosition = 0;
-        });
-      }
-    }, onError: (error) {
-      print('Error receiving track change events: $error');
-    });
+    _trackChangeSubscription = _eventChannel.receiveBroadcastStream().listen(
+      (dynamic event) {
+        if (event == 'track_changed') {
+          _loadCurrentTrack();
+          setState(() {
+            _currentPosition = 0;
+          });
+        }
+      },
+      onError: (error) {
+        print('Error receiving track change events: $error');
+      },
+    );
   }
 
   void _startProgressTimer() {
@@ -207,16 +213,16 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                Text(
-                                  lyrics,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                      ),
-                                  textAlign: TextAlign.center,
+                                Center(
+                                  child: Text(
+                                    lyrics,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
                               ],
                             ),
@@ -240,9 +246,9 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
             const SizedBox(height: 8),
             Text(
               _currentTrack!.artist,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -264,7 +270,10 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                 // slider
                 Expanded(
                   child: Slider(
-                    value: _currentPosition.toDouble().clamp(0, _currentTrack?.length.toDouble() ?? 1),
+                    value: _currentPosition.toDouble().clamp(
+                      0,
+                      _currentTrack?.length.toDouble() ?? 1,
+                    ),
                     min: 0,
                     max: _currentTrack?.length.toDouble() ?? 1,
                     onChanged: (value) {
@@ -276,7 +285,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                     onChangeEnd: (value) async {
                       try {
                         await AudioPlayerManager.seek(value.toInt());
-                        final newPosition = await AudioPlayerManager.getPosition();
+                        final newPosition =
+                            await AudioPlayerManager.getPosition();
                         if (mounted) {
                           setState(() {
                             _currentPosition = newPosition;
@@ -285,7 +295,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                       } catch (e) {
                         print('Seek failed: $e');
                         // revert if seek fail.
-                        final currentPos = await AudioPlayerManager.getPosition();
+                        final currentPos =
+                            await AudioPlayerManager.getPosition();
                         if (mounted) {
                           setState(() {
                             _currentPosition = currentPos;

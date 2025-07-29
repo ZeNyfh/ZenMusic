@@ -62,7 +62,7 @@ public class PlayerManager {
     }
 
     public void playNextTrackForcefully() {
-        if (queuePosition <= queue.size()) {
+        if (queuePosition <= queue.size()-1) {
             AudioTrack next = queue.get(queuePosition);
             if (next != null) {
                 currentTrack = next;

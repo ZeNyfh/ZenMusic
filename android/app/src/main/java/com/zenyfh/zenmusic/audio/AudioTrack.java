@@ -9,7 +9,7 @@ public class AudioTrack {
     private final Uri thumbnail;
     private final int length;   // seconds
     private final String streamUrl;
-    private int position;       // seconds
+    private final int position;       // seconds
 
     public AudioTrack(String artist, String title, Uri thumbnail, int length, int position, String streamUrl) {
         this.artist = artist;

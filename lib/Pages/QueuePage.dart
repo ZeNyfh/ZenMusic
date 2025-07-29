@@ -56,8 +56,14 @@ class _QueuePageState extends State<QueuePage> {
                             final track = queue[index];
                             return ListTile(
                                 leading: track.thumbnail.isNotEmpty
-                                        ? Image.network(track.thumbnail)
-                                        : const Icon(Icons.music_note),
+                                    ? AspectRatio(
+                                    aspectRatio: 1,
+                                    child: Image.network(
+                                        track.thumbnail,
+                                        fit: BoxFit.cover,
+                                    ),
+                                )
+                                    : const Icon(Icons.music_note),
                                 title: Text(track.title),
                                 subtitle: Text(track.artist),
                                 trailing: Text(track.durationFormatted),

@@ -111,9 +111,7 @@ class _YouTubePlayerState extends State<YouTubePlayer> {
             child: _searchResults.isEmpty
                 ? Center(
               child: Text(
-                _controller.text.isEmpty
-                    ? 'Enter a search term'
-                    : 'No results found',
+                _isLoading ? '' : _controller.text.isEmpty ? 'Enter a search term' : 'No results found',
               ),
             )
                 : ListView.builder(

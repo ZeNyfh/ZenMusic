@@ -7,15 +7,15 @@ import androidx.media3.exoplayer.ExoPlayer;
 import com.zenyfh.zenmusic.audio.AudioTrack;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class PlayerManager {
-    private final BlockingQueue<AudioTrack> queue = new LinkedBlockingQueue<>();
+    private final LinkedList<AudioTrack> queue = new LinkedList<>();
     private ExoPlayer player;
     private TrackEventListener eventListener;
     private AudioTrack currentTrack;
+    private int queuePosition = 0;
     private long startTime;
     public PlayerManager(Context context) {
         initializePlayer(context);
@@ -49,7 +49,7 @@ public class PlayerManager {
 
     public void queueTrack(AudioTrack track) {
         if (track == null) return;
-        queue.offer(track);
+        queue.add(track);
 
         if (!isPlaying()) {
             playNextTrack();
@@ -58,19 +58,17 @@ public class PlayerManager {
 
     public void playNextTrack() {
         if (isPlaying()) return;
-
-        AudioTrack next = queue.poll();
-        if (next != null) {
-            currentTrack = next;
-            playTrack(next);
-        }
+        playNextTrackForcefully();
     }
 
     public void playNextTrackForcefully() {
-        AudioTrack next = queue.poll();
-        if (next != null) {
-            currentTrack = next;
-            playTrack(next);
+        if (queuePosition <= queue.size()) {
+            AudioTrack next = queue.get(queuePosition);
+            if (next != null) {
+                currentTrack = next;
+                playTrack(next);
+                queuePosition++;
+            }
         }
     }
 
@@ -106,7 +104,7 @@ public class PlayerManager {
     }
 
     public void seek(int time) {
-        player.seekTo(time*1000);
+        player.seekTo(time* 1000L);
     }
 
     public int getPosition() {

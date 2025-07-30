@@ -45,6 +45,13 @@ public class MainActivity extends FlutterActivity {
 
     private void init() {
         try {
+            executor.execute(() -> {
+                try {
+                    YoutubeDL.getInstance().updateYoutubeDL(this, YoutubeDL.UpdateChannel._NIGHTLY);
+                } catch (YoutubeDLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
             YoutubeDL.getInstance().init(getApplication());
             playerManager = new PlayerManager(this);
             youTubeExtractor = new YouTubeExtractor();

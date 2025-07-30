@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../models/AudioTrack.dart';
 import '../services/AudioPlayerManager.dart';
+import 'PlayerPage.dart';
 
 class NowPlayingPage extends StatefulWidget {
   const NowPlayingPage({super.key});
@@ -169,30 +170,29 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           children: [
             GestureDetector(
               onTap: _toggleOverlay,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Image.network(
-                    _currentTrack!.thumbnail,
-                    height: MediaQuery.of(context).size.height * 0.35,
-                    fit: BoxFit.cover,
-                  ),
-                  if (_isOverlayVisible)
-                    FutureBuilder<String>(
-                      future: AudioPlayerManager.getLyrics(),
-                      builder: (context, snapshot) {
-                        final lyrics = snapshot.data ?? 'Loading lyrics...';
+              child: AspectRatio(
+                aspectRatio: 1, // Makes the area square (1:1)
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      _currentTrack!.thumbnail,
+                      fit: BoxFit.cover, // Fill the square
+                    ),
+                    if (_isOverlayVisible)
+                      Container(
+                        color: Colors.black54,
+                        padding: const EdgeInsets.all(20.0),
+                        child: FutureBuilder<String>(
+                          future: AudioPlayerManager.getLyrics(),
+                          builder: (context, snapshot) {
+                            final lyrics = snapshot.data ?? 'Loading lyrics...';
 
-                        return Container(
-                          color: Colors.black54,
-                          height: MediaQuery.of(context).size.height * 0.35,
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Center(
-                                  child: Text(
+                            return SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
                                     _currentTrack!.title,
                                     style: Theme.of(context)
                                         .textTheme
@@ -200,10 +200,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                                         ?.copyWith(color: Colors.white),
                                     textAlign: TextAlign.center,
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Center(
-                                  child: Text(
+                                  const SizedBox(height: 4),
+                                  Text(
                                     _currentTrack!.artist,
                                     style: Theme.of(context)
                                         .textTheme
@@ -211,26 +209,23 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                                         ?.copyWith(color: Colors.white70),
                                     textAlign: TextAlign.center,
                                   ),
-                                ),
-                                const SizedBox(height: 12),
-                                Center(
-                                  child: Text(
+                                  const SizedBox(height: 12),
+                                  Text(
                                     lyrics,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                        ),
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
                                     textAlign: TextAlign.center,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                ],
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -244,14 +239,32 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
-            Text(
-              _currentTrack!.artist,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => YouTubePlayer(initialQuery: _currentTrack!.artist),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Text(
+                    _currentTrack!.artist,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(color: Colors.grey[600]),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 32),
 

@@ -214,7 +214,6 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   Widget build(BuildContext context) {
     if (_currentTrack == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Now Playing')),
         body: const Center(child: Text('No track playing')),
       );
     }

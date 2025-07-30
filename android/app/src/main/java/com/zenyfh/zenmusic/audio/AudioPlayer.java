@@ -76,6 +76,9 @@ public class AudioPlayer {
         if (this.queuePosition >= this.queue.size()) {
             this.queuePosition = 0;
         }
+        if (this.queue.isEmpty()) {
+            return;
+        }
         setNowPlaying(this.queue.get(this.queuePosition));
     }
 
@@ -83,6 +86,9 @@ public class AudioPlayer {
         this.queuePosition--;
         if (this.queuePosition < 0) {
             this.queuePosition = this.queue.size() - 1;
+        }
+        if (this.queue.isEmpty()) {
+            return;
         }
         setNowPlaying(this.queue.get(this.queuePosition));
     }

@@ -52,6 +52,7 @@ class AudioPlayerManager {
 
   static Future<void> removeFromQueue(int index) async {
     try {
+      print("Index: $index");
       await _channel.invokeMethod("removeFromQueue", {'query': index});
     } on Exception {
       throw Exception('No track to remove.');

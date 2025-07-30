@@ -39,12 +39,6 @@ class _QueuePageState extends State<QueuePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Queue'),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _refreshQueue),
-        ],
-      ),
       body: FutureBuilder<List<AudioTrack>>(
         future: _queueFuture,
         builder: (context, snapshot) {
@@ -130,11 +124,17 @@ class _QueuePageState extends State<QueuePage> {
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
-                      onTap: () async => _removeFromQueue(await track.position),
-                      child: const Icon(
-                        Icons.close,
-                        size: 14,
-                        color: Colors.black,
+                      behavior: HitTestBehavior.translucent,
+                      onTap: () async => _removeFromQueue(await track.queuePosition),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
                   ],

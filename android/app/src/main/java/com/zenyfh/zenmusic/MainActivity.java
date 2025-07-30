@@ -119,7 +119,8 @@ public class MainActivity extends FlutterActivity {
                 }
                 playerManager.player().getQueue().remove(index);
                 for (int i = index; i < playerManager.player().getQueue().size(); i++) {
-                    playerManager.player().getQueue().get(i).setQueuePosition(playerManager.player().getQueue().get(i).getQueuePosition()-1);
+                    AudioTrack track = playerManager.player().getQueue().get(i);
+                    track.setQueuePosition(track.getQueuePosition()-1);
                 }
             case "npNext":
                 playerManager.player().nextTrack();

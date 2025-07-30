@@ -112,6 +112,15 @@ public class MainActivity extends FlutterActivity {
             case "getCurrentTrack":
                 result.success(convertAudioTrackToMap(playerManager.player().nowPlaying()));
                 break;
+            case "removeFromQueue":
+                int index = call.argument("query");
+                if (playerManager.player().nowPlaying().getQueuePosition() == index) {
+                    playerManager.player().nextTrack();
+                }
+                playerManager.player().getQueue().remove(index);
+                for (int i = index; i < playerManager.player().getQueue().size(); i++) {
+                    playerManager.player().getQueue().get(i).setQueuePosition(playerManager.player().getQueue().get(i).getQueuePosition()-1);
+                }
             case "npNext":
                 playerManager.player().nextTrack();
                 break;
@@ -129,9 +138,7 @@ public class MainActivity extends FlutterActivity {
             case "getLyrics":
                 executor.execute(() -> {
                     String lyrics = LRCLIBManager.getLyrics(playerManager.player().nowPlaying());
-                    mainHandler.post(() -> {
-                        result.success(lyrics);
-                    });
+                    mainHandler.post(() -> result.success(lyrics));
                 });
                 break;
             case "seek":

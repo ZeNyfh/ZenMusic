@@ -53,6 +53,7 @@ public class YouTubeExtractor {
                         thumbnail,
                         length,
                         0, // initial pos
+                        0,
                         streamUrl,
                         (length > 0 && length < 172800) // if you're playing a song that is 2 days long, what are you doing.
                 ));
@@ -111,7 +112,8 @@ public class YouTubeExtractor {
                 Uri.parse(json.optString("thumbnail", "")),
                 json.optInt("duration", 0),
                 0,
-                audioUrl,
+                0,
+                json.optString("url", ""),
                 false
         );
     }

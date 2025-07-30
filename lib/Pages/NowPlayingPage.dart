@@ -39,17 +39,12 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-            constraints: const BoxConstraints(
-              maxHeight: 650,
-              maxWidth: 600,
-            ),
+            constraints: const BoxConstraints(maxHeight: 650, maxWidth: 600),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // search results
-                Expanded(
-                  child: SearchPage(initialQuery: _searchQuery),
-                ),
+                Expanded(child: SearchPage(initialQuery: _searchQuery)),
                 const SizedBox(height: 12),
 
                 // close button
@@ -86,7 +81,6 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
       ),
     );
   }
-
 
   @override
   void initState() {
@@ -227,195 +221,198 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 
     return Scaffold(
       body: Stack(
-          children: [
-            Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            GestureDetector(
-              onTap: _toggleOverlay,
-              child: AspectRatio(
-                aspectRatio: 1, // Makes the area square (1:1)
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.network(
-                      _currentTrack!.thumbnail,
-                      fit: BoxFit.cover, // Fill the square
-                    ),
-                    if (_isOverlayVisible)
-                      Container(
-                        color: Colors.black54,
-                        padding: const EdgeInsets.all(20.0),
-                        child: FutureBuilder<String>(
-                          future: AudioPlayerManager.getLyrics(),
-                          builder: (context, snapshot) {
-                            final lyrics = snapshot.data ?? 'Loading lyrics...';
-
-                            return SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    _currentTrack!.title,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(color: Colors.white),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _currentTrack!.artist,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(color: Colors.white70),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    lyrics,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                GestureDetector(
+                  onTap: _toggleOverlay,
+                  child: AspectRatio(
+                    aspectRatio: 1, // Makes the area square (1:1)
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.network(
+                          _currentTrack!.thumbnail,
+                          fit: BoxFit.cover, // Fill the square
                         ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
+                        if (_isOverlayVisible)
+                          Container(
+                            color: Colors.black54,
+                            padding: const EdgeInsets.all(20.0),
+                            child: FutureBuilder<String>(
+                              future: AudioPlayerManager.getLyrics(),
+                              builder: (context, snapshot) {
+                                final lyrics =
+                                    snapshot.data ?? 'Loading lyrics...';
 
-            // track title and artist
-            Text(
-              _currentTrack!.title,
-              style: Theme.of(context).textTheme.headlineSmall,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  setState(() {
-                    _isSearchOverlayVisible = true;
-                    _searchQuery = _currentTrack!.artist;
-                  });
-                },
-                borderRadius: BorderRadius.circular(4),
-                child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Text(
-                    _currentTrack!.artist,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(color: Colors.grey[600]),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                                return SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        _currentTrack!.title,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(color: Colors.white),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _currentTrack!.artist,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(color: Colors.white70),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        lyrics,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                            ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
-            // progress bar
-            Row(
-              children: [
-                // current pos
-                FutureBuilder<int>(
-                  future: _currentTrack!.position,
-                  builder: (context, snapshot) {
-                    final position = snapshot.hasData ? snapshot.data! : 0;
-                    return Text(_formatDuration(position));
-                  },
+                // track title and artist
+                Text(
+                  _currentTrack!.title,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-
-                // slider
-                Expanded(
-                  child: Slider(
-                    value: _currentPosition.toDouble().clamp(
-                      0,
-                      _currentTrack?.length.toDouble() ?? 1,
-                    ),
-                    min: 0,
-                    max: _currentTrack?.length.toDouble() ?? 1,
-                    onChanged: (value) {
+                const SizedBox(height: 8),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
                       setState(() {
-                        _currentPosition = value.toInt();
+                        _isSearchOverlayVisible = true;
+                        _searchQuery = _currentTrack!.artist;
                       });
                     },
-                    // after user moved the position slider.
-                    onChangeEnd: (value) async {
-                      try {
-                        await AudioPlayerManager.seek(value.toInt());
-                        final newPosition =
-                            await AudioPlayerManager.getPosition();
-                        if (mounted) {
-                          setState(() {
-                            _currentPosition = newPosition;
-                          });
-                        }
-                      } catch (e) {
-                        print('Seek failed: $e');
-                        // revert if seek fail.
-                        final currentPos =
-                            await AudioPlayerManager.getPosition();
-                        if (mounted) {
-                          setState(() {
-                            _currentPosition = currentPos;
-                          });
-                        }
-                      }
-                    },
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Text(
+                        _currentTrack!.artist,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(color: Colors.grey[600]),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ),
                 ),
+                const SizedBox(height: 32),
 
-                Text(_formatDuration(_currentTrack!.length)),
+                // progress bar
+                Row(
+                  children: [
+                    // current pos
+                    FutureBuilder<int>(
+                      future: _currentTrack!.position,
+                      builder: (context, snapshot) {
+                        final position = snapshot.hasData ? snapshot.data! : 0;
+                        return Text(_formatDuration(position));
+                      },
+                    ),
+
+                    // slider
+                    Expanded(
+                      child: Slider(
+                        value: _currentPosition.toDouble().clamp(
+                          0,
+                          _currentTrack?.length.toDouble() ?? 1,
+                        ),
+                        min: 0,
+                        max: _currentTrack?.length.toDouble() ?? 1,
+                        onChanged: (value) {
+                          setState(() {
+                            _currentPosition = value.toInt();
+                          });
+                        },
+                        // after user moved the position slider.
+                        onChangeEnd: (value) async {
+                          try {
+                            await AudioPlayerManager.seek(value.toInt());
+                            final newPosition =
+                                await AudioPlayerManager.getPosition();
+                            if (mounted) {
+                              setState(() {
+                                _currentPosition = newPosition;
+                              });
+                            }
+                          } catch (e) {
+                            print('Seek failed: $e');
+                            // revert if seek fail.
+                            final currentPos =
+                                await AudioPlayerManager.getPosition();
+                            if (mounted) {
+                              setState(() {
+                                _currentPosition = currentPos;
+                              });
+                            }
+                          }
+                        },
+                      ),
+                    ),
+
+                    Text(_formatDuration(_currentTrack!.length)),
+                  ],
+                ),
+                const SizedBox(height: 32),
+
+                // playback controls
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.skip_previous),
+                      iconSize: 48,
+                      onPressed: _skipToPrevious,
+                    ),
+                    const SizedBox(width: 32),
+                    IconButton(
+                      icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+                      iconSize: 64,
+                      onPressed: _playPause,
+                    ),
+                    const SizedBox(width: 32),
+                    IconButton(
+                      icon: const Icon(Icons.skip_next),
+                      iconSize: 48,
+                      onPressed: _skipToNext,
+                    ),
+                  ],
+                ),
               ],
             ),
-            const SizedBox(height: 32),
-
-            // playback controls
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.skip_previous),
-                  iconSize: 48,
-                  onPressed: _skipToPrevious,
-                ),
-                const SizedBox(width: 32),
-                IconButton(
-                  icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-                  iconSize: 64,
-                  onPressed: _playPause,
-                ),
-                const SizedBox(width: 32),
-                IconButton(
-                  icon: const Icon(Icons.skip_next),
-                  iconSize: 48,
-                  onPressed: _skipToNext,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-            if (_isSearchOverlayVisible) _buildSearchOverlay(),
-    ],
+          ),
+          if (_isSearchOverlayVisible) _buildSearchOverlay(),
+        ],
       ),
     );
   }

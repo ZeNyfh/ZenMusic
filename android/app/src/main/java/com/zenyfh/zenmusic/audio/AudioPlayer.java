@@ -91,6 +91,7 @@ public class AudioPlayer {
         if (track == null) throw new NullPointerException("track is null");
         boolean wasEmpty = queue.isEmpty();
         this.queue.add(track);
+        track.setQueuePosition(queue.size());
 
         if (wasEmpty) {
             this.queuePosition = 0;

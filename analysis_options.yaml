@@ -1,8 +1,2 @@
-include: package:flutter_lints/flutter.yaml
-
-linter:
-    rules:
-
-dartfmt:
-    indent: 4
-    trailing-commas: false
+formatter:
+    trailing_commas: preserve

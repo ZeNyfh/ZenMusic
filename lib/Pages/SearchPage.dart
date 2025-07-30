@@ -124,60 +124,69 @@ class _SearchPageState extends State<SearchPage> {
             Expanded(
               child: _searchResults.isEmpty
                   ? Center(
-                child: Text(
-                  _isLoading ? '' : _controller.text.isEmpty ? 'Enter a search term' : 'No results found',
-                ),
-              )
-                  : ListView.builder(
-                itemCount: _searchResults.length,
-                itemBuilder: (context, index) {
-                  final track = _searchResults[index];
-                  const scale = 1.4;
-
-                  return ListTile(
-                    dense: true,
-                    visualDensity: VisualDensity.compact,
-                    contentPadding:
-                    EdgeInsets.symmetric(horizontal: 0),
-                    minVerticalPadding: 8 * scale,
-                    minLeadingWidth: 40 * scale,
-                    leading: track.thumbnail != "" && track.thumbnail.isNotEmpty ? SizedBox(
-                      width: 40 * scale/1.2,
-                      height: 40 * scale/1.2,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: Image.network(
-                          track.thumbnail,
-                          fit: BoxFit.cover,
-                        ),
+                      child: Text(
+                        _isLoading
+                            ? ''
+                            : _controller.text.isEmpty
+                            ? 'Enter a search term'
+                            : 'No results found',
                       ),
-                    ) : SizedBox(
-                      width: 40 * scale,
-                      height: 40 * scale,
-                      child: Icon(Icons.music_note, size: 20 * scale),
-                    ),
-                    title: Text(
-                      track.title,
-                      style: TextStyle(fontSize: 14 * scale / 1.5),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(
-                      track.artist ?? 'Unknown artist',
-                      style: TextStyle(fontSize: 12 * scale / 1.5),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: Text(
-                      track.durationFormatted,
-                      style: TextStyle(fontSize: 12 * scale / 1.5),
-                    ),
-                    onTap: _isLoading ? null : () => _enqueueTrack(track),
-                  );
-                },
-              ),
-            )
+                    )
+                  : ListView.builder(
+                      itemCount: _searchResults.length,
+                      itemBuilder: (context, index) {
+                        final track = _searchResults[index];
+                        const scale = 1.4;
 
+                        return ListTile(
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 0),
+                          minVerticalPadding: 8 * scale,
+                          minLeadingWidth: 40 * scale,
+                          leading:
+                              track.thumbnail != "" &&
+                                  track.thumbnail.isNotEmpty
+                              ? SizedBox(
+                                  width: 40 * scale / 1.2,
+                                  height: 40 * scale / 1.2,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: Image.network(
+                                      track.thumbnail,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                )
+                              : SizedBox(
+                                  width: 40 * scale,
+                                  height: 40 * scale,
+                                  child: Icon(
+                                    Icons.music_note,
+                                    size: 20 * scale,
+                                  ),
+                                ),
+                          title: Text(
+                            track.title,
+                            style: TextStyle(fontSize: 14 * scale / 1.5),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            track.artist ?? 'Unknown artist',
+                            style: TextStyle(fontSize: 12 * scale / 1.5),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: Text(
+                            track.durationFormatted,
+                            style: TextStyle(fontSize: 12 * scale / 1.5),
+                          ),
+                          onTap: _isLoading ? null : () => _enqueueTrack(track),
+                        );
+                      },
+                    ),
+            ),
           ],
         ),
       ),
@@ -188,8 +197,7 @@ class _SearchPageState extends State<SearchPage> {
   void initState() {
     super.initState();
 
-    if (widget.initialQuery != null &&
-        widget.initialQuery!.trim().isNotEmpty) {
+    if (widget.initialQuery != null && widget.initialQuery!.trim().isNotEmpty) {
       _controller.text = widget.initialQuery!;
       _handleSubmit();
     }

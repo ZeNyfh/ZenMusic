@@ -8,6 +8,7 @@ class AudioTrack {
   final String _thumbnail;
   final int _length;
   late int _position;
+  final int _queuePosition;
   final String _streamUrl;
   final bool _isStream;
 
@@ -17,20 +18,23 @@ class AudioTrack {
     required String thumbnail,
     required int length,
     required int position,
+    required int queuePosition,
     required String streamUrl,
     required bool isStream,
-  })  : _artist = artist,
-        _title = title,
-        _thumbnail = thumbnail,
-        _length = length,
-        _position = position,
-        _streamUrl = streamUrl,
-        _isStream = isStream;
+  }) : _artist = artist,
+       _title = title,
+       _thumbnail = thumbnail,
+       _length = length,
+       _position = position,
+       _queuePosition = queuePosition,
+       _streamUrl = streamUrl,
+       _isStream = isStream;
 
   String get artist => _artist;
   String get title => _title;
   String get thumbnail => _thumbnail;
   int get length => _length;
+  int get queuePosition => _queuePosition;
   String get streamUrl => _streamUrl;
   bool get isStream => _isStream;
 
@@ -40,7 +44,6 @@ class AudioTrack {
     return pos;
   }
 
-
   factory AudioTrack.fromMap(Map<dynamic, dynamic> map) {
     return AudioTrack(
       artist: map['artist'] ?? 'Unknown Artist',
@@ -48,6 +51,7 @@ class AudioTrack {
       thumbnail: map['thumbnail'] ?? '',
       length: map['length'] ?? 0,
       position: map['position'] ?? 0,
+      queuePosition: map['queuePosition'] ?? 0,
       streamUrl: map['streamUrl'] ?? '',
       isStream: map['isStream'] ?? false,
     );

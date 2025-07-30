@@ -15,9 +15,11 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final _controller = TextEditingController();
   bool _isLoading = false;
-  bool _isAddingToQueue = false;
   List<AudioTrack> _searchResults = [];
   String? _error;
+
+  final List<AudioTrack> _playQueue = [];
+  bool _isProcessingQueue = false;
 
   Future<void> _handleSubmit() async {
     final text = _controller.text.trim();
@@ -28,13 +30,13 @@ class _SearchPageState extends State<SearchPage> {
 
     if (_isUrl(text)) {
       // direct URL play
-      setState(() => _isAddingToQueue = true);
+      setState(() => _isLoading = true);
       try {
         await AudioPlayerManager.play(text);
       } catch (e) {
         setState(() => _error = 'Playback error: $e');
       } finally {
-        setState(() => _isAddingToQueue = false);
+        setState(() => _isLoading = false);
       }
     } else {
       // search
@@ -54,21 +56,31 @@ class _SearchPageState extends State<SearchPage> {
     return text.startsWith('http://') || text.startsWith('https://');
   }
 
-  Future<void> _playTrack(AudioTrack track) async {
-    setState(() => _isAddingToQueue = true);
-    try {
-      await AudioPlayerManager.play(track.streamUrl);
-    } catch (e) {
-      setState(() => _error = 'Playback error: $e');
-    } finally {
-      setState(() => _isAddingToQueue = false);
+  void _enqueueTrack(AudioTrack track) {
+    _playQueue.add(track);
+    _processQueue();
+  }
+
+  void _processQueue() async {
+    if (_isProcessingQueue) return;
+
+    _isProcessingQueue = true;
+
+    while (_playQueue.isNotEmpty) {
+      final currentTrack = _playQueue.removeAt(0);
+      try {
+        await AudioPlayerManager.play(currentTrack.streamUrl);
+      } catch (e) {
+        setState(() => _error = 'Playback error: $e');
+      }
     }
+
+    _isProcessingQueue = false;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Search')),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -93,9 +105,7 @@ class _SearchPageState extends State<SearchPage> {
                 const SizedBox(width: 2),
                 IconButton(
                   icon: const Icon(Icons.search),
-                  onPressed: (_isLoading || _isAddingToQueue)
-                      ? null
-                      : _handleSubmit,
+                  onPressed: _isLoading ? null : _handleSubmit,
                 ),
               ],
             ),
@@ -114,31 +124,60 @@ class _SearchPageState extends State<SearchPage> {
             Expanded(
               child: _searchResults.isEmpty
                   ? Center(
-                      child: Text(
-                        _isLoading
-                            ? ''
-                            : _controller.text.isEmpty
-                            ? 'Enter a search term'
-                            : 'No results found',
-                      ),
-                    )
+                child: Text(
+                  _isLoading ? '' : _controller.text.isEmpty ? 'Enter a search term' : 'No results found',
+                ),
+              )
                   : ListView.builder(
-                      itemCount: _searchResults.length,
-                      itemBuilder: (context, index) {
-                        final track = _searchResults[index];
-                        return ListTile(
-                          leading: track.thumbnail != null
-                              ? Image.network(track.thumbnail!)
-                              : null,
-                          title: Text(track.title),
-                          subtitle: Text(track.artist ?? 'Unknown artist'),
-                          onTap: _isAddingToQueue
-                              ? null
-                              : () => _playTrack(track),
-                        );
-                      },
+                itemCount: _searchResults.length,
+                itemBuilder: (context, index) {
+                  final track = _searchResults[index];
+                  const scale = 1.4;
+
+                  return ListTile(
+                    dense: true,
+                    visualDensity: VisualDensity.compact,
+                    contentPadding:
+                    EdgeInsets.symmetric(horizontal: 0),
+                    minVerticalPadding: 8 * scale,
+                    minLeadingWidth: 40 * scale,
+                    leading: track.thumbnail != "" && track.thumbnail.isNotEmpty ? SizedBox(
+                      width: 40 * scale/1.2,
+                      height: 40 * scale/1.2,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.network(
+                          track.thumbnail,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ) : SizedBox(
+                      width: 40 * scale,
+                      height: 40 * scale,
+                      child: Icon(Icons.music_note, size: 20 * scale),
                     ),
-            ),
+                    title: Text(
+                      track.title,
+                      style: TextStyle(fontSize: 14 * scale / 1.5),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      track.artist ?? 'Unknown artist',
+                      style: TextStyle(fontSize: 12 * scale / 1.5),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: Text(
+                      track.durationFormatted,
+                      style: TextStyle(fontSize: 12 * scale / 1.5),
+                    ),
+                    onTap: _isLoading ? null : () => _enqueueTrack(track),
+                  );
+                },
+              ),
+            )
+
           ],
         ),
       ),
@@ -149,7 +188,8 @@ class _SearchPageState extends State<SearchPage> {
   void initState() {
     super.initState();
 
-    if (widget.initialQuery != null && widget.initialQuery!.trim().isNotEmpty) {
+    if (widget.initialQuery != null &&
+        widget.initialQuery!.trim().isNotEmpty) {
       _controller.text = widget.initialQuery!;
       _handleSubmit();
     }

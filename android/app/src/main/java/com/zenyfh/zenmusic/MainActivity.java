@@ -182,7 +182,6 @@ public class MainActivity extends FlutterActivity {
                 runOnUiThread(() -> {
                     if (track != null) {
                         playerManager.player().queue(track);
-                        playerManager.player().setNowPlaying(track); // Explicitly set
                         result.success(track.getTitle());
                     } else {
                         result.error("NO_AUDIO", "No audio stream found", null);

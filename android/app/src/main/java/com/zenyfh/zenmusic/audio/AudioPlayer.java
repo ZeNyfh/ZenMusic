@@ -67,6 +67,7 @@ public class AudioPlayer {
         exoPlayer.setMediaItem(MediaItem.fromUri(nowPlaying().getStreamUrl()));
         exoPlayer.prepare();
         exoPlayer.play();
+        setNowPlaying(getQueue().get(queuePosition));
         getTrackEventListener().onTrackStart(currentAudioTrack);
     }
 

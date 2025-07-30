@@ -15,7 +15,7 @@ import java.util.List;
 
 public class YouTubeExtractor {
     public List<AudioTrack> searchAudioTracks(String query) throws Exception {
-        final int SEARCHLIMIT = 50;
+        final int SEARCHLIMIT = 25;
         if (!query.startsWith("http")) {
             query = String.format("ytsearch%s:%s", SEARCHLIMIT, query);
         }

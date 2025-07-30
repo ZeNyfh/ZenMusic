@@ -18,12 +18,75 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   AudioTrack? _currentTrack;
   bool _isPlaying = true;
   bool _isOverlayVisible = false;
+  bool _isSearchOverlayVisible = false;
+  String? _searchQuery;
   Timer? _progressTimer;
   int _currentPosition = 0;
   StreamSubscription? _trackChangeSubscription;
   final EventChannel _eventChannel = const EventChannel(
     'com.zenyfh.zenmusic/audio_events',
   );
+
+  Widget _buildSearchOverlay() {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withOpacity(0.7), // dimmed background
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            constraints: const BoxConstraints(
+              maxHeight: 650,
+              maxWidth: 600,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // search results
+                Expanded(
+                  child: SearchPage(initialQuery: _searchQuery),
+                ),
+                const SizedBox(height: 12),
+
+                // close button
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                        side: const BorderSide(color: Colors.grey),
+                      ),
+                      backgroundColor: Colors.grey[100],
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isSearchOverlayVisible = false;
+                        _searchQuery = null;
+                      });
+                    },
+                    child: const Text(
+                      'Close',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
 
   @override
   void initState() {
@@ -163,7 +226,9 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     }
 
     return Scaffold(
-      body: Padding(
+      body: Stack(
+          children: [
+            Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -243,12 +308,10 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SearchPage(initialQuery: _currentTrack!.artist),
-                    ),
-                  );
+                  setState(() {
+                    _isSearchOverlayVisible = true;
+                    _searchQuery = _currentTrack!.artist;
+                  });
                 },
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
@@ -350,6 +413,9 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
             ),
           ],
         ),
+      ),
+            if (_isSearchOverlayVisible) _buildSearchOverlay(),
+    ],
       ),
     );
   }

@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../models/AudioTrack.dart';
 import '../services/AudioPlayerManager.dart';
-import 'PlayerPage.dart';
+import 'SearchPage.dart';
 
 class NowPlayingPage extends StatefulWidget {
   const NowPlayingPage({super.key});
@@ -246,7 +246,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => YouTubePlayer(initialQuery: _currentTrack!.artist),
+                      builder: (context) => SearchPage(initialQuery: _currentTrack!.artist),
                     ),
                   );
                 },

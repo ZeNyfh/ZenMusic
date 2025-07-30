@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'Pages/NowPlayingPage.dart';
-import 'Pages/PlayerPage.dart';
+import 'Pages/SearchPage.dart';
 import 'Pages/QueuePage.dart';
 
 void main() => runApp(const MyApp());
@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
     int _selectedIndex = 0;
 
     final List<Widget> _pages = [
-        YouTubePlayer(),
+        SearchPage(),
         NowPlayingPage(),
         QueuePage(),
     ];

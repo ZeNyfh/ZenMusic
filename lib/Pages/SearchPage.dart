@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import '../models/AudioTrack.dart';
 import '../services/AudioPlayerManager.dart';
 
-class YouTubePlayer extends StatefulWidget {
+class SearchPage extends StatefulWidget {
   final String? initialQuery;
 
-  const YouTubePlayer({super.key, this.initialQuery});
+  const SearchPage({super.key, this.initialQuery});
 
   @override
-  State<YouTubePlayer> createState() => _YouTubePlayerState();
+  State<SearchPage> createState() => _SearchPageState();
 }
 
-class _YouTubePlayerState extends State<YouTubePlayer> {
+class _SearchPageState extends State<SearchPage> {
   final _controller = TextEditingController();
   bool _isLoading = false;
   bool _isAddingToQueue = false;

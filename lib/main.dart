@@ -4,10 +4,10 @@ import 'Pages/NowPlayingPage.dart';
 import 'Pages/SearchPage.dart';
 import 'Pages/QueuePage.dart';
 
-void main() => runApp(const MyApp());
+void main() => runApp(const ZenMusic());
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ZenMusic extends StatelessWidget {
+  const ZenMusic({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -144,9 +144,7 @@ class _SearchPageState extends State<SearchPage> {
                           contentPadding: EdgeInsets.symmetric(horizontal: 0),
                           minVerticalPadding: 8 * scale,
                           minLeadingWidth: 40 * scale,
-                          leading:
-                              track.thumbnail != "" &&
-                                  track.thumbnail.isNotEmpty
+                          leading: track.thumbnail != "" && track.thumbnail.isNotEmpty
                               ? SizedBox(
                                   width: 40 * scale / 1.2,
                                   height: 40 * scale / 1.2,

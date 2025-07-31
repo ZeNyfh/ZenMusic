@@ -15,10 +15,8 @@ class AudioPlayerManager {
 
   static Future<List<AudioTrack>> search(String query) async {
     try {
-      final List<dynamic> result = await _channel.invokeMethod('search', {
-        'query': query,
-      });
-      return result.map((e) => AudioTrack.fromMap(e)).toList();
+      final result = await _channel.invokeMethod('search', {'query': query});
+      return (result as List).map((e) => audioTrackFromMap(e)).toList();
     } on PlatformException catch (e) {
       throw AudioServiceException(e.code, e.message ?? 'Search failed');
     }
@@ -34,8 +32,8 @@ class AudioPlayerManager {
 
   static Future<List<AudioTrack>> getQueue() async {
     try {
-      final List<dynamic> result = await _channel.invokeMethod('getQueue');
-      return result.map((e) => AudioTrack.fromMap(e)).toList();
+      final result = await _channel.invokeMethod('getQueue');
+      return (result as List).map((e) => audioTrackFromMap(e)).toList();
     } on PlatformException catch (e) {
       throw AudioServiceException(e.code, e.message ?? 'Queue load failed');
     }
@@ -44,7 +42,7 @@ class AudioPlayerManager {
   static Future<AudioTrack?> getCurrentTrack() async {
     try {
       final result = await _channel.invokeMethod('getCurrentTrack');
-      return result != null ? AudioTrack.fromMap(result) : null;
+      return result != null ? audioTrackFromMap(result) : null;
     } on PlatformException {
       return null;
     }
@@ -109,6 +107,19 @@ class AudioPlayerManager {
       return -1;
     }
   }
+}
+
+AudioTrack audioTrackFromMap(Map<dynamic, dynamic> map) {
+  return AudioTrack(
+    artist: map['artist'] as String? ?? '',
+    title: map['title'] as String? ?? '',
+    thumbnail: map['thumbnail'] as String? ?? '',
+    length: map['length'] as int? ?? 0,
+    position: map['position'] as int? ?? 0,
+    queuePosition: map['queuePosition'] as int? ?? 0,
+    streamUrl: map['streamUrl'] as String? ?? '',
+    isStream: map['isStream'] as bool? ?? false,
+  );
 }
 
 class AudioServiceException implements Exception {

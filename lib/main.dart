@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'Pages/NowPlayingPage.dart';
-import 'Pages/SearchPage.dart';
 import 'Pages/QueuePage.dart';
+import 'Pages/SearchPage.dart';
 
 void main() => runApp(const ZenMusic());
 

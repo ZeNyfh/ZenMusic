@@ -7,6 +7,7 @@ import com.zenyfh.zenmusic.audio.AudioPlayer;
 
 public class PlayerManager {
     private AudioPlayer audioPlayer;
+
     public PlayerManager(Context context) {
         initializePlayer(context);
     }

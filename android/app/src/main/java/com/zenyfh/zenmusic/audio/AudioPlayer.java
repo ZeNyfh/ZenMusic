@@ -1,7 +1,8 @@
 package com.zenyfh.zenmusic.audio;
 
 import android.content.Context;
-
+import android.os.Handler;
+import android.os.Looper;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
 import androidx.media3.exoplayer.ExoPlayer;
@@ -13,8 +14,9 @@ import static com.zenyfh.zenmusic.audio.AudioEventHandler.getTrackEventListener;
 
 public class AudioPlayer {
     private final ExoPlayer exoPlayer;
-    private AudioTrack currentAudioTrack;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final LinkedList<AudioTrack> queue = new LinkedList<>();
+    private AudioTrack currentAudioTrack;
     private int queuePosition;
 
     public AudioPlayer(Context context) {
@@ -30,13 +32,17 @@ public class AudioPlayer {
     }
 
     public int getPosition() {
-        return (int) (exoPlayer.getContentPosition() / 1000); // ms → seconds
+        return (int) (exoPlayer.getContentPosition() / 1000);
     }
+
     public void seek(long positionSeconds) {
-        exoPlayer.seekTo(positionSeconds * 1000); // seconds → ms
+        mainHandler.post(() -> {
+            exoPlayer.seekTo(positionSeconds * 1000);
+        });
     }
+
     public long getDuration() {
-        return exoPlayer.getDuration() / 1000; // ms → seconds
+        return exoPlayer.getDuration() / 1000;
     }
 
     public void resume() {
@@ -62,13 +68,15 @@ public class AudioPlayer {
     }
 
     private void changeTrack() {
-        exoPlayer.stop();
-        exoPlayer.clearMediaItems();
-        exoPlayer.setMediaItem(MediaItem.fromUri(nowPlaying().getStreamUrl()));
-        exoPlayer.prepare();
-        exoPlayer.play();
-        setNowPlaying(getQueue().get(queuePosition));
-        getTrackEventListener().onTrackStart(currentAudioTrack);
+        mainHandler.post(() -> {
+            exoPlayer.stop();
+            exoPlayer.clearMediaItems();
+            exoPlayer.setMediaItem(MediaItem.fromUri(nowPlaying().getStreamUrl()));
+            exoPlayer.prepare();
+            exoPlayer.play();
+            setNowPlaying(getQueue().get(queuePosition));
+            getTrackEventListener().onTrackStart(currentAudioTrack);
+        });
     }
 
     private void incrementQueuePosition() {
@@ -95,15 +103,18 @@ public class AudioPlayer {
 
     public void queue(AudioTrack track) {
         if (track == null) throw new NullPointerException("track is null");
-        boolean wasEmpty = queue.isEmpty();
-        this.queue.add(track);
-        track.setQueuePosition(queue.size());
 
-        if (wasEmpty) {
-            this.queuePosition = 0;
-            setNowPlaying(track);
-            changeTrack(); // Start playing immediately
-        }
+        mainHandler.post(() -> {
+            boolean wasEmpty = queue.isEmpty();
+            queue.add(track);
+            track.setQueuePosition(queue.size());
+
+            if (wasEmpty) {
+                this.queuePosition = 0;
+                setNowPlaying(track);
+                changeTrack();
+            }
+        });
     }
 
     public LinkedList<AudioTrack> getQueue() {

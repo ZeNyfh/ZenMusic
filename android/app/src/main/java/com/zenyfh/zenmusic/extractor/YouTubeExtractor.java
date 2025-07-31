@@ -1,6 +1,5 @@
 package com.zenyfh.zenmusic.extractor;
 
-import android.net.Uri;
 import android.util.Log;
 import com.yausername.youtubedl_android.YoutubeDL;
 import com.yausername.youtubedl_android.YoutubeDLRequest;
@@ -31,6 +30,7 @@ public class YouTubeExtractor {
         JSONObject jsonObject = new JSONObject(response.getOut());
         return parseJsonToAudioTracks(jsonObject);
     }
+
     private List<AudioTrack> parseJsonToAudioTracks(JSONObject jsonObject) throws JSONException {
         List<AudioTrack> tracks = new ArrayList<>();
         JSONArray entries = jsonObject.getJSONArray("entries");
@@ -45,7 +45,7 @@ public class YouTubeExtractor {
                 String streamUrl = entry.getString("url").split(" ")[0];
 
                 // get first thumbnail URL or use fallback
-                Uri thumbnail = Uri.parse(getMostSquareThumbnailUrl(entry));
+                String thumbnail = getMostSquareThumbnailUrl(entry);
 
                 tracks.add(new AudioTrack(
                         artist,
@@ -86,7 +86,8 @@ public class YouTubeExtractor {
                     return best.getString("url");
                 }
             }
-        } catch (JSONException ignored) {}
+        } catch (JSONException ignored) {
+        }
         return ""; // fallback
     }
 
@@ -109,7 +110,7 @@ public class YouTubeExtractor {
         return new AudioTrack(
                 json.optString("uploader", "Unknown Artist"),
                 json.optString("title", "Unknown Title"),
-                Uri.parse(json.optString("thumbnail", "")),
+                json.optString("thumbnail", ""),
                 json.optInt("duration", 0),
                 0,
                 0,

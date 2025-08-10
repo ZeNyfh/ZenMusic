@@ -1,7 +1,6 @@
 package com.zenyfh.zenmusic.extractor;
 
 import android.annotation.SuppressLint;
-import com.zenyfh.zenmusic.audio.AudioTrack;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -74,11 +73,16 @@ public class LRCLIBManager {
         put("∙", ".");
     }};
 
-    public static String getLyrics(AudioTrack track) {
-        if (Objects.equals(track.getTitle(), "") || track.getTitle().equalsIgnoreCase("unknown title")) {
+    public static String getLyrics(String[] query) { // {title, artist, isStream, streamURL}
+        String title = query[0];
+        String artist = query[1];
+        boolean isStream = Boolean.parseBoolean(query[2]);
+        String streamURL = query[3];
+
+        if (Objects.equals(title, "") || title.equalsIgnoreCase("unknown title")) {
             return "Could not get lyrics.";
         }
-        String url = createURL(track);
+        String url = createURL(query);
         if (url.isEmpty()) {
             return "Could not get lyrics.";
         }
@@ -100,7 +104,7 @@ public class LRCLIBManager {
             }
 
             String lyrics = parseLyrics(response);
-            if (lyrics == null || lyrics.equalsIgnoreCase("null")) {
+            if (lyrics.isEmpty() || lyrics.equalsIgnoreCase("null")) {
                 return "Could not get lyrics.";
             }
             return lyrics;
@@ -111,19 +115,22 @@ public class LRCLIBManager {
     }
 
     @SuppressLint("NewApi") // added in api 1, deprecated in api 15, undeprecated in api 33
-    private static String createURL(AudioTrack track) {
+    private static String createURL(String[] trackInfo) { // {title, artist, isStream, streamURL}
+        String title = trackInfo[0];
+        String artist = trackInfo[1];
+        boolean isStream = Boolean.parseBoolean(trackInfo[2]);
+        String streamURL = trackInfo[3];
+
         StringBuilder urlBuilder = new StringBuilder();
         urlBuilder.append("https://lrclib.net/api/search?q=");
 
-        String title = track.getTitle();
-        if (track.isStream()) {
-            title = RadioDataFetcher.getStreamSongNow(track.getStreamUrl())[0];
+        if (isStream) {
+            title = RadioDataFetcher.getStreamSongNow(streamURL)[0];
         }
 
         title = filterMetadata(title);
 
-        String artist = track.getArtist();
-        if (track.isStream()) {
+        if (isStream) {
             artist = "";
         }
         urlBuilder.append(URLEncoder.encode(artist + " " + title, StandardCharsets.UTF_8).trim());
@@ -161,7 +168,7 @@ public class LRCLIBManager {
         }
 
         if (matcher.find()) {
-            String bracketContentString = matcher.group(1).toLowerCase();
+            String bracketContentString = Objects.requireNonNull(matcher.group(1)).toLowerCase();
             for (String filter : titleFilters) {
                 if (bracketContentString.contains(filter.toLowerCase())) {
                     track = matcher.replaceAll("");

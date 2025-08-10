@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-import '../models/AudioTrack.dart';
 import '../services/AudioPlayerManager.dart';
 import 'SearchPage.dart';
 
@@ -15,22 +13,55 @@ class NowPlayingPage extends StatefulWidget {
 }
 
 class _NowPlayingPageState extends State<NowPlayingPage> {
-  AudioTrack? _currentTrack; // Make nullable
-  bool _isPlaying = true;
   bool _isOverlayVisible = false;
   bool _isSearchOverlayVisible = false;
   String? _searchQuery;
-  Timer? _progressTimer;
   int _currentPosition = 0;
+  bool _isSeeking = false;
+
+  StreamSubscription? _positionSubscription;
   StreamSubscription? _trackChangeSubscription;
-  final EventChannel _eventChannel = const EventChannel(
-    'com.zenyfh.zenmusic/audio_events',
-  );
+
+  Future<void> _getCurrentPosition() async {
+    try {
+      final position = await AudioPlayerManager.currentPosition;
+      if (mounted) {
+        setState(() => _currentPosition = position);
+      }
+    } catch (e) {
+      print('Error getting position: $e');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPosition = 0;
+
+    _getCurrentPosition();
+
+    _positionSubscription = AudioPlayerManager.positionChanged.listen((position) {
+      if (!_isSeeking) {
+        setState(() => _currentPosition = position);
+      }
+    });
+
+    _trackChangeSubscription = AudioPlayerManager.trackChanged.listen((_) {
+      setState(() => _currentPosition = 0);
+    });
+  }
+
+  @override
+  void dispose() {
+    _positionSubscription?.cancel();
+    _trackChangeSubscription?.cancel();
+    super.dispose();
+  }
 
   Widget _buildSearchOverlay() {
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withOpacity(0.7), // dimmed background
+        color: Colors.black.withOpacity(0.7),
         child: Center(
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -82,131 +113,15 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     );
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadCurrentTrack();
-    _startProgressTimer();
-    _setupTrackChangeListener();
-  }
-
-  @override
-  void dispose() {
-    _progressTimer?.cancel();
-    _trackChangeSubscription?.cancel();
-    super.dispose();
-  }
-
-  void _setupTrackChangeListener() {
-    _trackChangeSubscription = _eventChannel.receiveBroadcastStream().listen(
-      (dynamic event) {
-        if (event == 'track_changed') {
-          _loadCurrentTrack();
-          setState(() {
-            _currentPosition = 0;
-          });
-        }
-      },
-      onError: (error) {
-        print('Error receiving track change events: $error');
-      },
-    );
-  }
-
-  void _startProgressTimer() {
-    _progressTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
-      if (_isPlaying) {
-        try {
-          final position = await AudioPlayerManager.getPosition();
-          if (mounted) {
-            setState(() {
-              _currentPosition = position;
-            });
-          }
-        } catch (e) {
-          print('Error updating position: $e');
-        }
-      }
-    });
-  }
-
-  Future<void> _loadCurrentTrack() async {
-    try {
-      final track = await AudioPlayerManager.getCurrentTrack();
-      if (mounted) {
-        setState(() {
-          _currentTrack = track;
-          if (track != null) {
-            _currentPosition = track.position;
-          }
-        });
-      }
-    } catch (e) {
-      print('Error loading current track: $e');
-    }
-  }
-
   void _toggleOverlay() {
-    setState(() {
-      _isOverlayVisible = !_isOverlayVisible;
-    });
+    setState(() => _isOverlayVisible = !_isOverlayVisible);
   }
 
-  void _playPause() async {
-    try {
-      if (_isPlaying) {
-        await AudioPlayerManager.pause();
-      } else {
-        await AudioPlayerManager.resume();
-      }
-      setState(() {
-        _isPlaying = !_isPlaying;
-      });
-    } catch (e) {
-      print('Play/Pause error: $e');
-    }
-  }
-
-  void _skipToPrevious() async {
-    try {
-      await AudioPlayerManager.previous();
-      await _loadCurrentTrack();
-    } catch (e) {
-      print('Previous track error: $e');
-    }
-  }
-
-  void _skipToNext() async {
-    try {
-      await AudioPlayerManager.next();
-      await _loadCurrentTrack();
-    } catch (e) {
-      print('Next track error: $e');
-    }
-  }
-
-  void _onSeek(double value) async {
-    try {
-      setState(() {
-        _currentPosition = value.toInt();
-      });
-
-      await AudioPlayerManager.seek(value.toInt());
-
-      final newPosition = await AudioPlayerManager.getPosition();
-      if (mounted) {
-        setState(() {
-          _currentPosition = newPosition;
-        });
-      }
-    } catch (e) {
-      print('Seek error: $e');
-      final currentPos = await AudioPlayerManager.getPosition();
-      if (mounted) {
-        setState(() {
-          _currentPosition = currentPos;
-        });
-      }
+  void _playPause() {
+    if (AudioPlayerManager.isPlaying) {
+      AudioPlayerManager.pause();
+    } else {
+      AudioPlayerManager.resume();
     }
   }
 
@@ -217,8 +132,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Handle loading state
-    if (_currentTrack == null) {
+    if (AudioPlayerManager.currentTrack == null) {
       return Scaffold(
         body: Center(
           child: Column(
@@ -236,14 +150,9 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
       );
     }
 
-    final track = _currentTrack!;
-
-    // show message if no track is playing
-    if (_currentTrack == null) {
-      return Scaffold(
-        body: Center(child: Text('No track playing')),
-      );
-    }
+    final track = AudioPlayerManager.currentTrack!;
+    final maxDuration = track.length > 0 ? track.length : 1;
+    final displayPosition = _currentPosition.clamp(0, maxDuration);
 
     return Scaffold(
       body: Stack(
@@ -270,7 +179,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                             color: Colors.black54,
                             padding: const EdgeInsets.all(20.0),
                             child: FutureBuilder<String>(
-                              future: AudioPlayerManager.getLyrics(),
+                              future: AudioPlayerManager.getLyrics([track.title, track.artist, track.isStream ? "True" : "False", track.videoID]),
+                              // {title, artist, isStream, streamURL}
                               builder: (context, snapshot) {
                                 final lyrics = snapshot.data ?? 'Loading lyrics...';
 
@@ -279,13 +189,13 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                                     crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       Text(
-                                        _currentTrack!.title,
+                                        track.title,
                                         style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
                                         textAlign: TextAlign.center,
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        _currentTrack!.artist, // Safe
+                                        track.artist,
                                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70),
                                         textAlign: TextAlign.center,
                                       ),
@@ -312,7 +222,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 
                 // track title and artist
                 Text(
-                  _currentTrack!.title,
+                  track!.title,
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -325,14 +235,14 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                     onTap: () {
                       setState(() {
                         _isSearchOverlayVisible = true;
-                        _searchQuery = _currentTrack!.artist; // Safe
+                        _searchQuery = track.artist;
                       });
                     },
                     borderRadius: BorderRadius.circular(4),
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: Text(
-                        _currentTrack!.artist,
+                        track.artist,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
                         textAlign: TextAlign.center,
                         maxLines: 1,
@@ -346,45 +256,25 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                 // progress bar
                 Row(
                   children: [
-                    // current pos
-                    Text(_formatDuration(_currentPosition)),
-                    // slider
+                    Text(_formatDuration(displayPosition)),
                     Expanded(
                       child: Slider(
-                        value: _currentPosition.toDouble().clamp(
-                          0,
-                          _currentTrack!.length.toDouble(),
-                        ),
+                        value: displayPosition.toDouble(),
                         min: 0,
-                        max: _currentTrack!.length.toDouble(),
+                        max: maxDuration.toDouble(),
                         onChanged: (value) {
                           setState(() {
                             _currentPosition = value.toInt();
+                            _isSeeking = true;
                           });
                         },
-                        onChangeEnd: (value) async {
-                          try {
-                            await AudioPlayerManager.seek(value.toInt());
-                            final newPosition = await AudioPlayerManager.getPosition();
-                            if (mounted) {
-                              setState(() {
-                                _currentPosition = newPosition;
-                              });
-                            }
-                          } catch (e) {
-                            print('Seek failed: $e');
-                            final currentPos = await AudioPlayerManager.getPosition();
-                            if (mounted) {
-                              setState(() {
-                                _currentPosition = currentPos;
-                              });
-                            }
-                          }
+                        onChangeEnd: (value) {
+                          AudioPlayerManager.seek(value.toInt());
+                          _isSeeking = false;
                         },
                       ),
                     ),
-
-                    Text(_formatDuration(_currentTrack!.length)),
+                    Text(_formatDuration(maxDuration)),
                   ],
                 ),
                 const SizedBox(height: 32),
@@ -396,11 +286,11 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                     IconButton(
                       icon: const Icon(Icons.skip_previous),
                       iconSize: 48,
-                      onPressed: _skipToPrevious,
+                      onPressed: AudioPlayerManager.previous,
                     ),
                     const SizedBox(width: 32),
                     IconButton(
-                      icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+                      icon: Icon(AudioPlayerManager.isPlaying ? Icons.pause : Icons.play_arrow),
                       iconSize: 64,
                       onPressed: _playPause,
                     ),
@@ -408,7 +298,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                     IconButton(
                       icon: const Icon(Icons.skip_next),
                       iconSize: 48,
-                      onPressed: _skipToNext,
+                      onPressed: AudioPlayerManager.next,
                     ),
                   ],
                 ),

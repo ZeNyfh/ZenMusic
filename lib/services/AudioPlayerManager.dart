@@ -1,15 +1,19 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
 
 import '../models/AudioTrack.dart';
+import 'AudioService.dart';
 
 class AudioPlayerManager {
   static const _channel = MethodChannel('com.zenyfh.zenmusic/audio');
+  static final AudioService _audioService = AudioService();
 
-  static Future<String> getLyrics() async {
+  // Metadata extraction
+  static Future<String> getLyrics(List<String> query) async {
     try {
-      return await _channel.invokeMethod("getLyrics");
+      return await _channel.invokeMethod("getLyrics", {'query': query});
     } on Exception {
-      return "could Not get lyrics";
+      return "Could not get lyrics";
     }
   }
 
@@ -22,91 +26,60 @@ class AudioPlayerManager {
     }
   }
 
-  static Future<String?> play(String query) async {
+  static Future<AudioTrack> extractAudioTrack(String videoId) async {
     try {
-      return await _channel.invokeMethod('play', {'query': query});
+      final result = await _channel.invokeMethod('extractAudioTrack', {'videoId': videoId});
+      return audioTrackFromMap(result);
     } on PlatformException catch (e) {
-      throw AudioServiceException(e.code, e.message ?? 'Unknown error');
+      throw AudioServiceException(e.code, e.message ?? 'Extraction failed');
     }
   }
 
-  static Future<List<AudioTrack>> getQueue() async {
+  // Playback control
+  static Future<void> play(String videoId) async {
     try {
-      final result = await _channel.invokeMethod('getQueue');
-      return (result as List).map((e) => audioTrackFromMap(e)).toList();
+      AudioTrack track = await extractAudioTrack(videoId);
+      await enqueueTrack(track);
     } on PlatformException catch (e) {
-      throw AudioServiceException(e.code, e.message ?? 'Queue load failed');
+      throw AudioServiceException(e.code, e.message ?? 'Play failed');
     }
   }
 
-  static Future<AudioTrack?> getCurrentTrack() async {
-    try {
-      final result = await _channel.invokeMethod('getCurrentTrack');
-      return result != null ? audioTrackFromMap(result) : null;
-    } on PlatformException {
-      return null;
-    }
+  static Future<void> enqueueTrack(AudioTrack track) async {
+    await _audioService.addToQueue(track);
   }
 
-  static Future<void> removeFromQueue(int index) async {
-    try {
-      print("Index: $index");
-      await _channel.invokeMethod("removeFromQueue", {'query': index});
-    } on Exception {
-      throw Exception('No track to remove.');
-    }
-  }
+  // Getters
+  static List<AudioTrack> get queue => _audioService.queue;
 
-  static Future<void> pause() async {
-    try {
-      await _channel.invokeMethod('pause');
-    } on Exception {
-      throw Exception('No track to pause.');
-    }
-  }
+  static AudioTrack? get currentTrack => _audioService.currentTrack;
 
-  static Future<void> resume() async {
-    try {
-      await _channel.invokeMethod('resume');
-    } on Exception {
-      throw Exception('No track to resume.');
-    }
-  }
+  static bool get isPlaying => _audioService.isPlaying;
 
-  static Future<void> seek(int position) async {
-    try {
-      await _channel.invokeMethod('seek', position);
-    } catch (e) {
-      print('Error seeking: $e');
-      throw e;
-    }
-  }
+  // Streams
+  static Stream<AudioTrack> get trackChanged => _audioService.trackChanged;
 
-  static Future<void> next() async {
-    try {
-      await _channel.invokeMethod("npNext");
-    } on Exception {
-      throw Exception("No track found.");
-    }
-  }
+  static Stream<List<AudioTrack>> get queueUpdated => _audioService.queueUpdated;
 
-  static Future<void> previous() async {
-    try {
-      await _channel.invokeMethod("npPrevious");
-    } on Exception {
-      throw Exception(
-        "No track found or something crazy happened with the queue position.",
-      );
-    }
-  }
+  static Stream<PlayerState> get playerStateChanged => _audioService.playerStateChanged;
 
-  static Future<int> getPosition() async {
-    try {
-      return await _channel.invokeMethod("getPosition");
-    } on Exception {
-      return -1;
-    }
-  }
+  static Stream<int> get positionChanged => _audioService.positionChanged;
+
+  static Future<int> get currentPosition async =>
+      (await _audioService.currentPosition)!.inSeconds.isNaN ? (_audioService.currentPosition as Duration).inSeconds : 0;
+
+  // Other methods (unchanged)
+  static Future<void> pause() async => _audioService.pause();
+
+  static Future<void> resume() async => _audioService.resume();
+
+  static Future<void> seek(int position) async => _audioService.seek(position);
+
+  static Future<void> next() async => _audioService.next();
+
+  static Future<void> previous() async => _audioService.previous();
+
+  static Future<void> removeFromQueue(int index) async => _audioService.removeFromQueue(index);
 }
 
 AudioTrack audioTrackFromMap(Map<dynamic, dynamic> map) {
@@ -117,7 +90,7 @@ AudioTrack audioTrackFromMap(Map<dynamic, dynamic> map) {
     length: map['length'] as int? ?? 0,
     position: map['position'] as int? ?? 0,
     queuePosition: map['queuePosition'] as int? ?? 0,
-    streamUrl: map['streamUrl'] as String? ?? '',
+    videoID: map['streamUrl'] as String? ?? '',
     isStream: map['isStream'] as bool? ?? false,
   );
 }

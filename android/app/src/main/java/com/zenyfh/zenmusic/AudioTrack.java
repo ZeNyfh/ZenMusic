@@ -1,4 +1,4 @@
-package com.zenyfh.zenmusic.audio;
+package com.zenyfh.zenmusic;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -14,7 +14,7 @@ public class AudioTrack {
     private final int position;       // seconds
     private final boolean isStream;
     private final Map<String, Object> mapObject;
-    private int queuePosition;
+    private final int queuePosition;
 
     public AudioTrack(String artist, String title, String thumbnail, int length, int position, int queuePosition, String streamUrl, boolean isStream) {
         this.artist = artist;
@@ -43,46 +43,6 @@ public class AudioTrack {
 
     public Map<String, Object> getMapObject() {
         return mapObject;
-    }
-
-    public int queuePosition() {
-        return queuePosition;
-    }
-
-    public boolean isStream() {
-        return isStream;
-    }
-
-    public String getArtist() {
-        return artist;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getThumbnail() {
-        return thumbnail;
-    }
-
-    public int getLength() {
-        return length;
-    }
-
-    public int getPosition() {
-        return position;
-    }
-
-    public int getQueuePosition() {
-        return queuePosition;
-    }
-
-    public void setQueuePosition(int i) {
-        this.queuePosition = i;
-    }
-
-    public String getStreamUrl() {
-        return streamUrl;
     }
 
     @NotNull

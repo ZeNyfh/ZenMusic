@@ -1,6 +1,6 @@
 package com.zenyfh.zenmusic.interop;
 
-import com.zenyfh.zenmusic.audio.AudioTrack;
+import com.zenyfh.zenmusic.AudioTrack;
 import io.flutter.plugin.common.MethodChannel;
 import org.jetbrains.annotations.NotNull;
 

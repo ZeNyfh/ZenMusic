@@ -18,64 +18,32 @@ class _SearchPageState extends State<SearchPage> {
   List<AudioTrack> _searchResults = [];
   String? _error;
 
-  final List<AudioTrack> _playQueue = [];
-  bool _isProcessingQueue = false;
-
   Future<void> _handleSubmit() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    // clear previous errors
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _isLoading = true;
+      _searchResults = [];
+    });
 
-    if (_isUrl(text)) {
-      // direct URL play
-      setState(() => _isLoading = true);
-      try {
+    try {
+      if (_isUrl(text)) {
         await AudioPlayerManager.play(text);
-      } catch (e) {
-        setState(() => _error = 'Playback error: $e');
-      } finally {
-        setState(() => _isLoading = false);
-      }
-    } else {
-      // search
-      setState(() => _isLoading = true);
-      try {
+      } else {
         final results = await AudioPlayerManager.search(text);
         setState(() => _searchResults = results);
-      } catch (e) {
-        setState(() => _error = 'Search error: $e');
-      } finally {
-        setState(() => _isLoading = false);
       }
+    } catch (e) {
+      setState(() => _error = 'Error: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
   bool _isUrl(String text) {
     return text.startsWith('http://') || text.startsWith('https://');
-  }
-
-  void _enqueueTrack(AudioTrack track) {
-    _playQueue.add(track);
-    _processQueue();
-  }
-
-  void _processQueue() async {
-    if (_isProcessingQueue) return;
-
-    _isProcessingQueue = true;
-
-    while (_playQueue.isNotEmpty) {
-      final currentTrack = _playQueue.removeAt(0);
-      try {
-        await AudioPlayerManager.play(currentTrack.streamUrl);
-      } catch (e) {
-        setState(() => _error = 'Playback error: $e');
-      }
-    }
-
-    _isProcessingQueue = false;
   }
 
   @override
@@ -85,14 +53,14 @@ class _SearchPageState extends State<SearchPage> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            // search bar
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _controller,
                     decoration: InputDecoration(
-                      labelText: 'Search YouTube',
+                      labelText: 'Search',
+                      hintText: 'Search or enter URL',
                       border: const OutlineInputBorder(),
                       contentPadding: const EdgeInsets.symmetric(
                         vertical: 16,
@@ -109,42 +77,39 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 20),
-
-            // status indicators
             if (_isLoading) const CircularProgressIndicator(),
             if (_error != null)
               Text(
                 _error!,
                 style: const TextStyle(color: Colors.red, fontSize: 16),
               ),
-
-            // search results
             Expanded(
               child: _searchResults.isEmpty
                   ? Center(
                       child: Text(
                         _isLoading
-                            ? ''
+                            ? 'Searching...'
                             : _controller.text.isEmpty
-                            ? 'Enter a search term'
+                            ? 'Enter a search term or URL'
                             : 'No results found',
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     )
                   : ListView.builder(
                       itemCount: _searchResults.length,
                       itemBuilder: (context, index) {
                         final track = _searchResults[index];
-                        const scale = 1.4;
+                        final scale = 1.4;
+                        final duration = track.length > 0 ? track.durationFormatted : 'Live';
 
                         return ListTile(
                           dense: true,
                           visualDensity: VisualDensity.compact,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 0),
+                          contentPadding: EdgeInsets.zero,
                           minVerticalPadding: 8 * scale,
                           minLeadingWidth: 40 * scale,
-                          leading: track.thumbnail != "" && track.thumbnail.isNotEmpty
+                          leading: track.thumbnail.isNotEmpty
                               ? SizedBox(
                                   width: 40 * scale / 1.2,
                                   height: 40 * scale / 1.2,
@@ -153,6 +118,10 @@ class _SearchPageState extends State<SearchPage> {
                                     child: Image.network(
                                       track.thumbnail,
                                       fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Icon(
+                                        Icons.music_note,
+                                        size: 20 * scale / 1.2,
+                                      ),
                                     ),
                                   ),
                                 )
@@ -171,16 +140,24 @@ class _SearchPageState extends State<SearchPage> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           subtitle: Text(
-                            track.artist ?? 'Unknown artist',
+                            track.artist.isNotEmpty ? track.artist : 'Unknown artist',
                             style: TextStyle(fontSize: 12 * scale / 1.5),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           trailing: Text(
-                            track.durationFormatted,
+                            duration,
                             style: TextStyle(fontSize: 12 * scale / 1.5),
                           ),
-                          onTap: _isLoading ? null : () => _enqueueTrack(track),
+                          onTap: _isLoading
+                              ? null
+                              : () async {
+                                  try {
+                                    await AudioPlayerManager.play(track.videoID);
+                                  } catch (e) {
+                                    setState(() => _error = 'Playback error: ${e.toString()}');
+                                  }
+                                },
                         );
                       },
                     ),
@@ -194,10 +171,9 @@ class _SearchPageState extends State<SearchPage> {
   @override
   void initState() {
     super.initState();
-
     if (widget.initialQuery != null && widget.initialQuery!.trim().isNotEmpty) {
       _controller.text = widget.initialQuery!;
-      _handleSubmit();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _handleSubmit());
     }
   }
 

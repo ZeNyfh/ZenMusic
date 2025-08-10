@@ -5,7 +5,7 @@ class AudioTrack {
   final int length;
   final int position;
   final int queuePosition;
-  final String streamUrl;
+  final String videoID;
   final bool isStream;
 
   AudioTrack({
@@ -15,7 +15,7 @@ class AudioTrack {
     required this.length,
     required this.position,
     required this.queuePosition,
-    required this.streamUrl,
+    required this.videoID,
     required this.isStream,
   });
 

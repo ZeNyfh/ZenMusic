@@ -41,12 +41,11 @@ public class RadioDataFetcher {
                 connection.disconnect();
                 inputStream.close();
 
-                // If no titles found, return "Unknown title"
                 if (dataList.isEmpty()) {
                     return new String[]{"Unknown title"};
                 }
 
-                return dataList.toArray(new String[0]); // Return all found titles
+                return dataList.toArray(new String[0]);
             } else {
                 return new String[]{"Unknown title"};
             }

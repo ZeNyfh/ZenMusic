@@ -4,7 +4,7 @@ import android.util.Log;
 import com.yausername.youtubedl_android.YoutubeDL;
 import com.yausername.youtubedl_android.YoutubeDLRequest;
 import com.yausername.youtubedl_android.YoutubeDLResponse;
-import com.zenyfh.zenmusic.audio.AudioTrack;
+import com.zenyfh.zenmusic.AudioTrack;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -12,7 +12,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class YouTubeExtractor {
+public class MediaExtractor {
     public List<AudioTrack> searchAudioTracks(String query) throws Exception {
         final int SEARCHLIMIT = 25;
         if (!query.startsWith("http")) {
@@ -20,11 +20,12 @@ public class YouTubeExtractor {
         }
 
         YoutubeDLRequest request = new YoutubeDLRequest(query);
+        request.addOption("--default-search", "https://music.youtube.com/search?q="); // limit to ytmusic only for now.
         request.addOption("-q");
         request.addOption("--no-warnings");
-        request.addOption("--flat-playlist");
         request.addOption("--skip-download");
         request.addOption("-J");
+        request.addOption("--flat-playlist");
 
         YoutubeDLResponse response = YoutubeDL.getInstance().execute(request);
         JSONObject jsonObject = new JSONObject(response.getOut());
@@ -39,26 +40,26 @@ public class YouTubeExtractor {
             try {
                 JSONObject entry = entries.getJSONObject(i);
                 Log.i("Entry:", entry.toString());
-                String artist = entry.getString("uploader");
-                String title = entry.getString("title");
-                int length = (int) Math.floor(entry.getDouble("duration"));
-                String streamUrl = entry.getString("url").split(" ")[0];
 
-                // get first thumbnail URL or use fallback
+                String artist = entry.optString("uploader", "Unknown Artist");
+                String title = entry.optString("title", "Unknown Title");
+                int length = (int) Math.floor(entry.optDouble("duration", 0));
+
                 String thumbnail = getMostSquareThumbnailUrl(entry);
+                String pageUrl = entry.getString("url"); // watch/source link
 
                 tracks.add(new AudioTrack(
                         artist,
                         title,
                         thumbnail,
                         length,
-                        0, // initial pos
                         0,
-                        streamUrl,
-                        (length > 0 && length < 172800) // if you're playing a song that is 2 days long, what are you doing.
+                        0,
+                        pageUrl,   // pageUrl
+                        (length > 0 && length < 172800)
                 ));
+
             } catch (Exception e) {
-                // skip invalid
                 e.printStackTrace();
             }
         }
@@ -92,20 +93,18 @@ public class YouTubeExtractor {
     }
 
     public AudioTrack extractAudioTrack(String url) throws Exception {
-        if (!url.startsWith("http")) {
-            url = "ytsearch:" + url;
-        }
-
         YoutubeDLRequest request = new YoutubeDLRequest(url);
         request.addOption("--no-playlist");
         request.addOption("-f", "bestaudio");
-        request.addOption("-j");
+        request.addOption("-J");
 
         YoutubeDLResponse response = YoutubeDL.getInstance().execute(request);
         JSONObject json = new JSONObject(response.getOut());
 
         String audioUrl = findBestAudioStream(json);
-        if (audioUrl == null) return null;
+        if (audioUrl == null) {
+            throw new Exception("No audio stream found");
+        }
 
         return new AudioTrack(
                 json.optString("uploader", "Unknown Artist"),
@@ -114,16 +113,21 @@ public class YouTubeExtractor {
                 json.optInt("duration", 0),
                 0,
                 0,
-                json.optString("url", ""),
+                audioUrl,
                 false
         );
     }
 
+
     private String findBestAudioStream(JSONObject json) {
+        String topLevelUrl = json.optString("url", null);
+        if (topLevelUrl != null && !topLevelUrl.isEmpty()) {
+            return topLevelUrl;
+        }
+
         JSONArray formats = json.optJSONArray("formats");
         if (formats == null) return null;
 
-        // mp4 with aac > mp4 with mp3 > other mp4 > other
         String mp4AacUrl = null;
         String mp4Mp3Url = null;
         String mp4Url = null;
@@ -134,31 +138,48 @@ public class YouTubeExtractor {
             if (format == null) continue;
 
             String url = format.optString("url", "none");
+            if ("none".equals(url)) continue;
 
             String acodec = format.optString("acodec", "none");
             String container = format.optString("ext", "");
             String vcodec = format.optString("vcodec", "none");
 
-            if ("none".equals(acodec)) continue; // video only
-            if (!"none".equals(vcodec)) continue; // only want audio
+            if ("none".equals(acodec)) continue;
 
-            boolean isMp4 = "mp4".equalsIgnoreCase(container);
-            if (isMp4) {
-                if (acodec.startsWith("mp4a") || acodec.contains("aac")) {
-                    mp4AacUrl = url; // mp4 aac
-                } else if (acodec.startsWith("mp3")) {
-                    mp4Mp3Url = url; // mp4 mp3
+            if ("none".equals(vcodec)) {
+                boolean isMp4 = "mp4".equalsIgnoreCase(container);
+                if (isMp4) {
+                    if (acodec.startsWith("mp4a") || acodec.contains("aac")) {
+                        mp4AacUrl = url;
+                    } else if (acodec.startsWith("mp3")) {
+                        mp4Mp3Url = url;
+                    } else {
+                        mp4Url = url;
+                    }
                 } else {
-                    mp4Url = url; // mp4 other
+                    fallbackUrl = url;
                 }
-            } else {
-                fallbackUrl = url; // not mp4
+            }
+            else {
+                fallbackUrl = url;
             }
         }
-        // in order of preference
+
         if (mp4AacUrl != null) return mp4AacUrl;
         if (mp4Mp3Url != null) return mp4Mp3Url;
         if (mp4Url != null) return mp4Url;
-        return fallbackUrl;
+        if (fallbackUrl != null) return fallbackUrl;
+
+        for (int i = 0; i < formats.length(); i++) {
+            JSONObject format = formats.optJSONObject(i);
+            if (format != null) {
+                String url = format.optString("url", null);
+                if (url != null && !url.isEmpty()) {
+                    return url;
+                }
+            }
+        }
+
+        return null;
     }
 }

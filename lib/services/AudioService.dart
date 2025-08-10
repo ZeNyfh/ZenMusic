@@ -15,7 +15,8 @@ class AudioService {
   PlayerState _playerState = PlayerState.stopped;
   AudioTrack? currentTrack;
 
-  // Events
+  bool loopQueue = true;
+
   final StreamController<AudioTrack> _trackChangedController = StreamController.broadcast();
   final StreamController<List<AudioTrack>> _queueUpdatedController = StreamController.broadcast();
   final StreamController<PlayerState> _playerStateController = StreamController.broadcast();
@@ -42,32 +43,31 @@ class AudioService {
   }
 
   Future<void> playTrack(AudioTrack track) async {
-    // Replace current queue with new track
     queue = [track];
     queuePosition = 0;
     currentTrack = track;
     await _play(track);
-    _queueUpdatedController.add(queue);
+    _queueUpdatedController.add(List.unmodifiable(queue));
     _trackChangedController.add(track);
   }
 
   Future<void> _play(AudioTrack track) async {
     await _player.play(UrlSource(track.videoID));
     _playerState = PlayerState.playing;
+    _playerStateController.add(_playerState);
   }
 
-  Future<void> addToQueue(AudioTrack track) {
+  Future<void> addToQueue(AudioTrack track) async {
     queue.add(track);
+    _queueUpdatedController.add(List.unmodifiable(queue));
 
-    // If nothing is playing, start playing this track
+    // if nothing is playing, start playing this track
     if (queuePosition == -1) {
       queuePosition = 0;
       currentTrack = track;
-      return _play(track);
+      await _play(track);
+      _trackChangedController.add(track);
     }
-
-    _queueUpdatedController.add(queue);
-    return Future.value();
   }
 
   Future<void> pause() async {
@@ -88,7 +88,26 @@ class AudioService {
 
   Future<void> next() async {
     if (queue.isEmpty) return;
-    queuePosition = (queuePosition + 1) % queue.length;
+
+    if (queuePosition == -1) {
+      queuePosition = 0;
+    } else {
+      queuePosition = queuePosition + 1;
+      if (queuePosition >= queue.length) {
+        if (loopQueue) {
+          queuePosition = 0;
+        } else {
+          // stop at end
+          queuePosition = -1;
+          currentTrack = null;
+          await _player.stop();
+          _trackChangedController.addStream(Stream.empty());
+          _queueUpdatedController.add(List.unmodifiable(queue));
+          return;
+        }
+      }
+    }
+
     currentTrack = queue[queuePosition];
     await _play(currentTrack!);
     _trackChangedController.add(currentTrack!);
@@ -96,37 +115,76 @@ class AudioService {
 
   Future<void> previous() async {
     if (queue.isEmpty) return;
-    queuePosition = (queuePosition - 1 + queue.length) % queue.length;
+
+    if (queuePosition == -1) {
+      // nothing was playing, start last
+      queuePosition = queue.length - 1;
+    } else {
+      queuePosition = queuePosition - 1;
+      if (queuePosition < 0) {
+        if (loopQueue) {
+          queuePosition = queue.length - 1;
+        } else {
+          queuePosition = -1;
+          currentTrack = null;
+          await _player.stop();
+          _trackChangedController.addStream(Stream.empty());
+          _queueUpdatedController.add(List.unmodifiable(queue));
+          return;
+        }
+      }
+    }
+
     currentTrack = queue[queuePosition];
     await _play(currentTrack!);
     _trackChangedController.add(currentTrack!);
   }
 
-  void removeFromQueue(int index) {
+  Future<void> removeFromQueue(int index) async {
     if (index < 0 || index >= queue.length) return;
 
+    final wasPlayingIndex = index == queuePosition;
+
     queue.removeAt(index);
-    if (queuePosition >= index && queuePosition > 0) {
-      queuePosition--;
+
+    if (queue.isEmpty) {
+      // nothing left
+      queuePosition = -1;
+      currentTrack = null;
+      await _player.stop();
+      _queueUpdatedController.add(List.unmodifiable(queue));
+      _trackChangedController.addStream(Stream.empty());
+      return;
     }
 
-    _queueUpdatedController.add(queue);
+    if (queuePosition > index) {
+      queuePosition--;
+    } else if (wasPlayingIndex) {
+      if (queuePosition >= queue.length) {
+        queuePosition = queue.length - 1;
+      }
+      currentTrack = queue[queuePosition];
+      await _play(currentTrack!);
+      _trackChangedController.add(currentTrack!);
+    }
+
+    if (queuePosition >= queue.length) {
+      queuePosition = queue.length - 1;
+    }
+    if (queue.isEmpty) queuePosition = -1;
+
+    _queueUpdatedController.add(List.unmodifiable(queue));
   }
 
-  // Getters
   bool get isPlaying => _playerState == PlayerState.playing;
-
   PlayerState get playerState => _playerState;
-
   Stream<AudioTrack> get trackChanged => _trackChangedController.stream;
-
   Stream<List<AudioTrack>> get queueUpdated => _queueUpdatedController.stream;
-
   Stream<PlayerState> get playerStateChanged => _playerStateController.stream;
-
   Stream<int> get positionChanged => _positionController.stream;
-
   Future<Duration?> get currentPosition => _player.getCurrentPosition();
+  int get currentIndex => queuePosition;
+  int indexOfTrack(AudioTrack track) => queue.indexOf(track);
 
   Future<void> dispose() async {
     await _player.dispose();

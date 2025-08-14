@@ -36,6 +36,9 @@ local.properties
 /android/app/profile
 /android/app/release
 /android/build/
+build/*
+/build/app/intermediates/
+
 
 # iOS/Flutter
 ios/Flutter/Flutter.podspec
